@@ -1,0 +1,77 @@
+﻿dateOp;dateVal;label;suggestedLabel;category;categoryParent;amount;comment;accountNum;accountLabel;accountbalance
+2026-02-27;2026-02-27;"CARTE 26/02/26 Europcar Spain CB*5343";Europcar;"Location de véhicules";"Voyages & Transports";-40,37;;00040419231;BoursoBank;10785.97
+2026-02-26;2026-02-26;"CARTE 25/02/26 AMAZON PAYMENTS 2 CB*5343";Amazon;"Livres, CD/DVD, bijoux, jouets…";"Vie quotidienne";-12,00;;00040419231;BoursoBank;10826.34
+2026-02-26;2026-02-26;"PRLV SEPA FREE MOBILE";"Free Mobile";"Téléphonie (fixe et mobile)";"Abonnements & téléphonie";-2,00;;00040419231;BoursoBank;10826.34
+2026-02-26;2026-02-26;"PRLV SEPA American Express Carte-France";"American Express Carte-France";"Epargne financière (retraite, prévoyance, PEA, assurance-vie…)";"Dépenses d'épargne";"-1 089,33";;00040419231;BoursoBank;10826.34
+2026-02-25;2026-02-25;"AVOIR 24/02/26 AMAZON EU SARL 2 CB*5343";"Avoir 24/02/26 Amazon Eu Sarl 2 Cb*5343";"Livres, CD/DVD, bijoux, jouets…";"Vie quotidienne";21,98;;00040419231;BoursoBank;11929.67
+2026-02-24;2026-02-24;"CARTE 21/02/26 AMAZON EU SARL 2 CB*5343";Amazon;"Livres, CD/DVD, bijoux, jouets…";"Vie quotidienne";-18,70;;00040419231;BoursoBank;11907.69
+2026-02-23;2026-02-23;"CARTE 20/02/26 AMAZON EU SARL 2 CB*5343";Amazon;"Livres, CD/DVD, bijoux, jouets…";"Vie quotidienne";-21,98;;00040419231;BoursoBank;11926.39
+2026-02-20;2026-02-20;"PRLV SEPA AUTOROUTES DU SUD DE LA FRANCE";ASF;Péages;"Auto & Moto";-38,20;;00040419231;BoursoBank;11948.37
+2026-02-18;2026-02-18;"CARTE 17/02/26 LES DOIGTS FRAMB CB*5343";"Les Doigts Framboises";Alimentation;"Vie quotidienne";-79,30;;00040419231;BoursoBank;11986.57
+2026-02-18;2026-02-18;"CARTE 17/02/26 BOUCHERIE VESSIE CB*5343";"Boucherie Vessie";Alimentation;"Vie quotidienne";-1,10;;00040419231;BoursoBank;11986.57
+2026-02-16;2026-02-16;"CARTE 14/02/26 TOTAL 4 CB*5343";TotalEnergies;Carburant;"Auto & Moto";-70,01;;00040419231;BoursoBank;12066.97
+2026-02-10;2026-02-10;"PRLV SEPA GENERALI VIE SA";Generali;"Epargne financière (retraite, prévoyance, PEA, assurance-vie…)";"Dépenses d'épargne";-200,00;;00040419231;BoursoBank;12136.98
+2026-02-09;2026-02-09;"CARTE 06/02/26 AMAZON PAYMENTS 2 CB*5343";Amazon;"Livres, CD/DVD, bijoux, jouets…";"Vie quotidienne";-19,42;;00040419231;BoursoBank;12336.98
+2026-02-09;2026-02-09;"VIR SEPA Webloyalty International SARL";"Vir Sepa Webloyalty International Sarl";"Virements reçus";"Virements reçus";271,56;;00040419231;BoursoBank;12336.98
+2026-02-06;2026-02-06;"CARTE 05/02/26 FAW CB*5343";Faw;"Vêtements et accessoires";"Vie quotidienne";-37,26;;00040419231;BoursoBank;12084.84
+2026-02-03;2026-02-03;"RETRAIT DAB 02/02/26 RATCHAWONG CB*5343";"Retrait Dab 02/02/26 Ratchawong Cb*5343";"Retraits cash";"Retraits cash";-149,73;;00040419231;BoursoBank;12122.1
+2026-02-02;2026-02-02;"VIR SEPA AIRBNB PAYMENTS LUXEMBOURG S.A.";"Vir Sepa Airbnb Payments Luxembourg S.a.";"Virements reçus";"Virements reçus";115,68;;00040419231;BoursoBank;12271.83
+2026-02-02;2026-02-02;"PRLV SEPA EDF clients particuliers";EDF;"Energie (électricité, gaz, fuel, chauffage…)";Logement;-30,54;;00040419231;BoursoBank;12271.83
+2026-01-28;2026-01-28;"PRLV SEPA FREE MOBILE";"Free Mobile";"Téléphonie (fixe et mobile)";"Abonnements & téléphonie";-2,00;;00040419231;BoursoBank;12186.69
+2026-01-28;2026-01-28;"PRLV SEPA American Express Carte-France";"American Express Carte-France";"Epargne financière (retraite, prévoyance, PEA, assurance-vie…)";"Dépenses d'épargne";-206,03;;00040419231;BoursoBank;12186.69
+2026-01-26;2026-01-26;"*CION CB OP. ETR GLOBE WEBLOADING EC";"*cion CB Op. Etr Globe Webloading Ec";"Frais bancaires et de gestion (dont agios)";"Services financiers & professionnels";-0,08;;00040419231;BoursoBank;12394.72
+2026-01-26;2026-01-26;"CARTE 24/01/26 GLOBE WEBLOADING CB*5343";"Globe Webloading";"Vêtements et accessoires";"Vie quotidienne";-5,05;;00040419231;BoursoBank;12394.72
+2026-01-23;2026-01-23;"CARTE 21/01/26 CEBU PAC CB*5343";"Cebu Pacific";"Non catégorisé";"Non catégorisé";-211,73;;00040419231;BoursoBank;12399.85
+2026-01-23;2026-01-23;"*CION CB OP. ETR CEBU PAC";"*cion CB Op. Etr Cebu Pac";"Frais bancaires et de gestion (dont agios)";"Services financiers & professionnels";-3,57;;00040419231;BoursoBank;12399.85
+2026-01-21;2026-01-21;"VIR INST FAUCOMPRET REMI";"Vir Inst Faucompret Remi";"Virements émis";"Virements émis";-200,00;;00040419231;BoursoBank;12615.15
+2026-01-20;2026-01-20;"PRLV SEPA AUTOROUTES DU SUD DE LA FRANCE";ASF;Péages;"Auto & Moto";-55,20;;00040419231;BoursoBank;12815.15
+2026-01-19;2026-01-19;"RETRAIT DAB 16/01/26 %KLCC 5* CB*5343";"Retrait Dab 16/01/26 %klcc 5* Cb*5343";"Retraits cash";"Retraits cash";-213,32;;00040419231;BoursoBank;12870.35
+2026-01-19;2026-01-19;"*CION CB OP. ETR 01/26 %KLCC 5*";"*cion CB Op. Etr 01/26 %klcc 5*";"Frais bancaires et de gestion (dont agios)";"Services financiers & professionnels";-3,60;;00040419231;BoursoBank;12870.35
+2026-01-19;2026-01-19;"CARTE 16/01/26 2CP*BusOnline Tic CB*5343";"2Cp*Busonline Tic";"Non catégorisé";"Non catégorisé";-21,20;;00040419231;BoursoBank;12870.35
+2026-01-19;2026-01-19;"*CION CB OP. ETR 2CP*BusOnline Ticket";"*cion CB Op. Etr 2cp*busonline Ticket";"Frais bancaires et de gestion (dont agios)";"Services financiers & professionnels";-0,35;;00040419231;BoursoBank;12870.35
+2026-01-19;2026-01-19;"CARTE 15/01/26 MCDONALDS-SURIA K CB*5343";McDonald's;"Restaurants, bars, discothèques…";"Loisirs et sorties";-8,30;;00040419231;BoursoBank;12870.35
+2026-01-19;2026-01-19;"*CION CB OP. ETR MCDONALDS-SURIA K003";"*cion CB Op. Etr Mcdonalds-suria K003";"Frais bancaires et de gestion (dont agios)";"Services financiers & professionnels";-0,14;;00040419231;BoursoBank;12870.35
+2026-01-19;2026-01-19;"CARTE 15/01/26 MCDONALDS-SURIA K CB*5343";McDonald's;"Restaurants, bars, discothèques…";"Loisirs et sorties";-3,98;;00040419231;BoursoBank;12870.35
+2026-01-19;2026-01-19;"*CION CB OP. ETR MCDONALDS-SURIA K003";"*cion CB Op. Etr Mcdonalds-suria K003";"Frais bancaires et de gestion (dont agios)";"Services financiers & professionnels";-0,06;;00040419231;BoursoBank;12870.35
+2026-01-19;2026-01-19;"CARTE 15/01/26 AMAZON PAYMENTS 2 CB*5343";Amazon;"Livres, CD/DVD, bijoux, jouets…";"Vie quotidienne";-25,16;;00040419231;BoursoBank;12870.35
+2026-01-13;2026-01-13;"CARTE 11/01/26 AWN FULL PAYMENT( CB*5343";"Awn Full Payment(";"Electronique et informatique";"Vie quotidienne";-1,38;;00040419231;BoursoBank;13146.46
+2026-01-13;2026-01-13;"*CION CB OP. ETR AWN FULL PAYMENT(113";"*cion CB Op. Etr Awn Full Payment(113";"Frais bancaires et de gestion (dont agios)";"Services financiers & professionnels";-0,02;;00040419231;BoursoBank;13146.46
+2026-01-13;2026-01-13;"CARTE 11/01/26 AWN(1135 TERMINAL CB*5343";"Awn(1135 Terminal";"Vie Quotidienne - Autres";"Vie quotidienne";-17,88;;00040419231;BoursoBank;13146.46
+2026-01-13;2026-01-13;"*CION CB OP. ETR AWN(1135 TERMINAL 21";"*cion CB Op. Etr Awn(1135 Terminal 21";"Frais bancaires et de gestion (dont agios)";"Services financiers & professionnels";-0,30;;00040419231;BoursoBank;13146.46
+2026-01-12;2026-01-12;"RETRAIT DAB 11/01/26 BANGKOK BAN CB*5343";"Retrait Dab 11/01/26 Bangkok Ban Cb*5343";"Retraits cash";"Retraits cash";-337,02;;00040419231;BoursoBank;13166.04
+2026-01-12;2026-01-12;"*CION CB OP. ETR 01/26 BANGKOK BANK";"*cion CB Op. Etr 01/26 Bangkok Bank";"Frais bancaires et de gestion (dont agios)";"Services financiers & professionnels";-5,69;;00040419231;BoursoBank;13166.04
+2026-01-12;2026-01-12;"CARTE 10/01/26 UMS*XINGLI CB*5343";Ums*Xingli;"Non catégorisé";"Non catégorisé";-1,84;;00040419231;BoursoBank;13166.04
+2026-01-12;2026-01-12;"*CION CB OP. ETR UMS*XINGLI";"*cion CB Op. Etr Ums*xingli";"Frais bancaires et de gestion (dont agios)";"Services financiers & professionnels";-0,03;;00040419231;BoursoBank;13166.04
+2026-01-12;2026-01-12;"CARTE 08/01/26 SPL RU CB*5343";"TCL Relation Usagers";"Non catégorisé";"Non catégorisé";-2,30;;00040419231;BoursoBank;13166.04
+2026-01-12;2026-01-12;"PRLV SEPA GENERALI VIE SA";Generali;"Epargne financière (retraite, prévoyance, PEA, assurance-vie…)";"Dépenses d'épargne";-200,00;;00040419231;BoursoBank;13166.04
+2026-01-09;2026-01-09;"CARTE 08/01/26 TRAITEUR SUN CB*5343";"Traiteur Grand";"Restaurants, bars, discothèques…";"Loisirs et sorties";-12,50;;00040419231;BoursoBank;13712.92
+2026-01-09;2026-01-09;"CARTE 08/01/26 BOUCHERIE VESSIE CB*5343";"Boucherie Vessie";Alimentation;"Vie quotidienne";-48,04;;00040419231;BoursoBank;13712.92
+2026-01-08;2026-01-08;"RETRAIT DAB 07/01/26 LYON CB*5343";"Retrait Dab 07/01/26 Lyon Cb*5343";"Retraits cash";"Retraits cash";-300,00;;00040419231;BoursoBank;13773.46
+2026-01-08;2026-01-08;"CARTE 07/01/26 U EXPRESS 9 CB*5343";"U Express";Alimentation;"Vie quotidienne";-4,69;;00040419231;BoursoBank;13773.46
+2026-01-08;2026-01-08;"CARTE 07/01/26 BlaBlaCar Bus CB*5343";"Comuto Pro";"Transports longue distance (avions, trains…)";"Voyages & Transports";-7,99;;00040419231;BoursoBank;13773.46
+2026-01-07;2026-01-07;"CARTE 06/01/26 BOUCHERIE VESSIE CB*5343";"Boucherie Vessie";Alimentation;"Vie quotidienne";-14,00;;00040419231;BoursoBank;14086.14
+2026-01-07;2026-01-07;"CARTE 05/01/26 AMAZON EU SARL 2 CB*5343";Amazon;"Livres, CD/DVD, bijoux, jouets…";"Vie quotidienne";-6,00;;00040419231;BoursoBank;14086.14
+2026-01-07;2026-01-07;"CARTE 06/01/26 Dominos France CB*5343";Domino's;"Restaurants, bars, discothèques…";"Loisirs et sorties";-33,74;;00040419231;BoursoBank;14086.14
+2026-01-06;2026-01-06;"CARTE 05/01/26 BOUCHERIE VESSIE CB*5343";"Boucherie Vessie";Alimentation;"Vie quotidienne";-8,50;;00040419231;BoursoBank;14139.88
+2026-01-06;2026-01-06;"CARTE 05/01/26 U EXPRESS 9 CB*5343";"U Express";Alimentation;"Vie quotidienne";-13,59;;00040419231;BoursoBank;14139.88
+2026-01-06;2026-01-06;"CARTE 04/01/26 Europcar CB*5343";Europcar;"Location de véhicules";"Voyages & Transports";-37,86;;00040419231;BoursoBank;14139.88
+2026-01-06;2026-01-06;"CARTE 03/01/26 AMAZON PAYMENTS 2 CB*5343";Amazon;"Livres, CD/DVD, bijoux, jouets…";"Vie quotidienne";-30,99;;00040419231;BoursoBank;14139.88
+2026-01-06;2026-01-06;"CARTE 04/01/26 VALENCIA KIOS CB*5343";"Valencia Kios";"Restaurants, bars, discothèques…";"Loisirs et sorties";-9,90;;00040419231;BoursoBank;14139.88
+2026-01-06;2026-01-06;"CARTE 04/01/26 LOOMISP*PANEO TRA CB*5343";"Loomisp*Paneo Tra";"Non catégorisé";"Non catégorisé";-8,80;;00040419231;BoursoBank;14139.88
+2026-01-06;2026-01-06;"CARTE 04/01/26 CARREF GRAN TURIA CB*5343";Carrefour;Alimentation;"Vie quotidienne";-20,83;;00040419231;BoursoBank;14139.88
+2026-01-06;2026-01-06;"CARTE 04/01/26 EESS XIRIVELLA PE CB*5343";"Eess Xirivella Pe";Carburant;"Auto & Moto";-29,34;;00040419231;BoursoBank;14139.88
+2026-01-06;2026-01-06;"CARTE 04/01/26 LOOMISP*PANEO TRA CB*5343";"Loomisp*Paneo Tra";"Non catégorisé";"Non catégorisé";-3,20;;00040419231;BoursoBank;14139.88
+2026-01-05;2026-01-05;"CARTE 02/01/26 AMAZON EU SARL 2 CB*5343";Amazon;"Livres, CD/DVD, bijoux, jouets…";"Vie quotidienne";-7,55;;00040419231;BoursoBank;14302.89
+2026-01-05;2026-01-05;"CARTE 03/01/26 NYX*BOWLINGCENTER CB*5343";Bowlingcenter;"Non catégorisé";"Non catégorisé";-1,00;;00040419231;BoursoBank;14302.89
+2026-01-05;2026-01-05;"CARTE 03/01/26 NYX*BOWLINGCENTER CB*5343";Bowlingcenter;"Non catégorisé";"Non catégorisé";-1,00;;00040419231;BoursoBank;14302.89
+2026-01-05;2026-01-05;"CARTE 03/01/26 NYX*BOWLINGCENTER CB*5343";Bowlingcenter;"Non catégorisé";"Non catégorisé";-1,00;;00040419231;BoursoBank;14302.89
+2026-01-05;2026-01-05;"CARTE 03/01/26 NYX*BOWLINGCENTER CB*5343";Bowlingcenter;"Non catégorisé";"Non catégorisé";-1,00;;00040419231;BoursoBank;14302.89
+2026-01-05;2026-01-05;"CARTE 03/01/26 NYX*BOWLINGCENTER CB*5343";Bowlingcenter;"Non catégorisé";"Non catégorisé";-1,00;;00040419231;BoursoBank;14302.89
+2026-01-05;2026-01-05;"CARTE 03/01/26 NYX*BOWLINGCENTER CB*5343";Bowlingcenter;"Non catégorisé";"Non catégorisé";-1,00;;00040419231;BoursoBank;14302.89
+2026-01-05;2026-01-05;"CARTE 03/01/26 NYX*BOWLINGCENTER CB*5343";Bowlingcenter;"Non catégorisé";"Non catégorisé";-1,00;;00040419231;BoursoBank;14302.89
+2026-01-05;2026-01-05;"CARTE 03/01/26 NYX*BOWLINGCENTER CB*5343";Bowlingcenter;"Non catégorisé";"Non catégorisé";-1,00;;00040419231;BoursoBank;14302.89
+2026-01-05;2026-01-05;"CARTE 03/01/26 LOOMISP*PANEO TRA CB*5343";"Loomisp*Paneo Tra";"Non catégorisé";"Non catégorisé";-18,50;;00040419231;BoursoBank;14302.89
+2026-01-05;2026-01-05;"CARTE 02/01/26 LOOMISP*PANEO TRA CB*5343";"Loomisp*Paneo Tra";"Non catégorisé";"Non catégorisé";-2,80;;00040419231;BoursoBank;14302.89
+2026-01-05;2026-01-05;"CARTE 02/01/26 Glovo 02JAN VJGSB CB*5343";Glovo;"Non catégorisé";"Non catégorisé";-42,43;;00040419231;BoursoBank;14302.89
+2026-01-02;2026-01-02;"CARTE 31/12/25 LIDL BURJASSOT-PA CB*5343";Lidl;Alimentation;"Vie quotidienne";-17,56;;00040419231;BoursoBank;14382.17
+2026-01-02;2026-01-02;"PRLV SEPA EDF clients particuliers";EDF;"Energie (électricité, gaz, fuel, chauffage…)";Logement;-30,54;;00040419231;BoursoBank;14382.17

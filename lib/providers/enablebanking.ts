@@ -287,6 +287,10 @@ export class EnableBankingProvider implements IProvider {
             category: null,
             subcategory: null,
             archived_at: null,
+            source: 'api_enablebanking',
+            is_deleted: 0,
+            counterparty_iban: null,
+            resulting_balance: null,
           } as Transaction);
         }
 

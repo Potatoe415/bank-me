@@ -1,0 +1,93 @@
+﻿dateOp;dateVal;label;suggestedLabel;category;categoryParent;amount;comment;accountNum;accountLabel;accountbalance
+2016-12-30;2016-12-30;"PAIEMENT CARTE 29122016 69 CARREFOUR CIT";"Paiement Carte 29122016 69 Carrefour Cit";Alimentation;"Vie quotidienne";-7,33;;00040419231;BoursoBank;13321.02
+2016-12-29;2016-12-29;"VIR SEPA Lieke Voermans - Rent NL";"Vir Sepa Lieke Voermans - Rent Nl";"Virements émis";"Virements émis";"-1 250,00";;00040419231;BoursoBank;13328.35
+2016-12-28;2016-12-28;"PAIEMENT CARTE 26122016 75 AMAZON EU SAR";"Paiement Carte 26122016 75 Amazon Eu Sar";"Livres, CD/DVD, bijoux, jouets…";"Vie quotidienne";-12,99;;00040419231;BoursoBank;14578.35
+2016-12-27;2016-12-27;"AVOIR 23122016 75 AMAZON PAYMENTS";"Avoir 23122016 75 Amazon Payments";"Livres, CD/DVD, bijoux, jouets…";"Vie quotidienne";11,99;;00040419231;BoursoBank;14591.34
+2016-12-27;2016-12-27;"AVOIR 23122016 75 AMAZON PAYMENTS";"Avoir 23122016 75 Amazon Payments";"Livres, CD/DVD, bijoux, jouets…";"Vie quotidienne";10,99;;00040419231;BoursoBank;14591.34
+2016-12-27;2016-12-27;"AVOIR 23122016 75 AMAZON PAYMENTS";"Avoir 23122016 75 Amazon Payments";"Livres, CD/DVD, bijoux, jouets…";"Vie quotidienne";13,99;;00040419231;BoursoBank;14591.34
+2016-12-27;2016-12-27;"PAIEMENT CARTE 22122016 75 AMAZON PAYMEN";"Paiement Carte 22122016 75 Amazon Paymen";"Livres, CD/DVD, bijoux, jouets…";"Vie quotidienne";-21,99;;00040419231;BoursoBank;14591.34
+2016-12-21;2016-12-21;"PAIEMENT CARTE 20122016 69 AUCHAN ST PRI";"Paiement Carte 20122016 69 Auchan St Pri";Alimentation;"Vie quotidienne";-66,41;;00040419231;BoursoBank;14576.36
+2016-12-21;2016-12-21;"PAIEMENT CARTE 20122016 75 AMAZON EU SAR";"Paiement Carte 20122016 75 Amazon Eu Sar";"Livres, CD/DVD, bijoux, jouets…";"Vie quotidienne";-13,42;;00040419231;BoursoBank;14576.36
+2016-12-21;2016-12-21;"PAIEMENT CARTE 20122016 75 AMAZON PAYMEN";"Paiement Carte 20122016 75 Amazon Paymen";"Livres, CD/DVD, bijoux, jouets…";"Vie quotidienne";-10,99;;00040419231;BoursoBank;14576.36
+2016-12-21;2016-12-21;"PAIEMENT CARTE 19122016 75 AMAZON PAYMEN";"Paiement Carte 19122016 75 Amazon Paymen";"Livres, CD/DVD, bijoux, jouets…";"Vie quotidienne";-11,99;;00040419231;BoursoBank;14576.36
+2016-12-20;2016-12-20;"PAIEMENT CARTE 17122016 75 AMAZON EU SAR";"Paiement Carte 17122016 75 Amazon Eu Sar";"Livres, CD/DVD, bijoux, jouets…";"Vie quotidienne";-23,90;;00040419231;BoursoBank;14679.17
+2016-12-20;2016-12-20;"PAIEMENT CARTE 19122016 92 INDIGO LYON";"Paiement Carte 19122016 92 Indigo Lyon";"Vêtements et accessoires";"Vie quotidienne";-3,00;;00040419231;BoursoBank;14679.17
+2016-12-19;2016-12-19;"RETRAIT DAB 15122016 ING         CB*0379";"Retrait Dab 15122016 Ing Cb*0379";"Retraits cash";"Retraits cash";-800,00;;00040419231;BoursoBank;14706.07
+2016-12-19;2016-12-19;"VIR SEPA Lieke Voermans - Rent NL";"Vir Sepa Lieke Voermans - Rent Nl";"Virements émis";"Virements émis";"-1 250,00";;00040419231;BoursoBank;14706.07
+2016-12-19;2016-12-19;"PAIEMENT CARTE 15122016 75 AMAZON EU SAR";"Paiement Carte 15122016 75 Amazon Eu Sar";"Livres, CD/DVD, bijoux, jouets…";"Vie quotidienne";-8,26;;00040419231;BoursoBank;14706.07
+2016-12-19;2016-12-19;"PAIEMENT CARTE 15122016 NL LGI Corp.";"Paiement Carte 15122016 Nl Lgi Corp.";"Non catégorisé";"Non catégorisé";-7,15;;00040419231;BoursoBank;14706.07
+2016-12-19;2016-12-19;"PAIEMENT CARTE 15122016 75 AMAZON EU SAR";"Paiement Carte 15122016 75 Amazon Eu Sar";"Livres, CD/DVD, bijoux, jouets…";"Vie quotidienne";-12,64;;00040419231;BoursoBank;14706.07
+2016-12-19;2016-12-19;"PAIEMENT CARTE 15122016 75 AMAZON EU SAR";"Paiement Carte 15122016 75 Amazon Eu Sar";"Livres, CD/DVD, bijoux, jouets…";"Vie quotidienne";-13,57;;00040419231;BoursoBank;14706.07
+2016-12-19;2016-12-19;"PAIEMENT CARTE 15122016 75 AMAZON EU SAR";"Paiement Carte 15122016 75 Amazon Eu Sar";"Livres, CD/DVD, bijoux, jouets…";"Vie quotidienne";-8,99;;00040419231;BoursoBank;14706.07
+2016-12-19;2016-12-19;"PAIEMENT CARTE 18122016 75 AMAZON PAYMEN";"Paiement Carte 18122016 75 Amazon Paymen";"Livres, CD/DVD, bijoux, jouets…";"Vie quotidienne";-10,99;;00040419231;BoursoBank;14706.07
+2016-12-19;2016-12-19;"PAIEMENT CARTE 18122016 75 AMAZON EU SAR";"Paiement Carte 18122016 75 Amazon Eu Sar";"Livres, CD/DVD, bijoux, jouets…";"Vie quotidienne";-28,49;;00040419231;BoursoBank;14706.07
+2016-12-19;2016-12-19;"PAIEMENT CARTE 16122016 NL Hutten Busine";"Paiement Carte 16122016 Nl Hutten Busine";"Restaurants, bars, discothèques…";"Loisirs et sorties";-7,15;;00040419231;BoursoBank;14706.07
+2016-12-15;2016-12-15;"PAIEMENT CARTE 13122016 75 AMAZON PAYMEN";"Paiement Carte 13122016 75 Amazon Paymen";"Livres, CD/DVD, bijoux, jouets…";"Vie quotidienne";-19,99;;00040419231;BoursoBank;16853.31
+2016-12-15;2016-12-15;"PAIEMENT CARTE 14122016 NL LGI Corp.";"Paiement Carte 14122016 Nl Lgi Corp.";"Non catégorisé";"Non catégorisé";-6,75;;00040419231;BoursoBank;16853.31
+2016-12-14;2016-12-14;"PAIEMENT CARTE 13122016 NL NS SCHIPHOL";"Paiement Carte 13122016 Nl Ns Schiphol";"Non catégorisé";"Non catégorisé";-50,50;;00040419231;BoursoBank;16880.05
+2016-12-14;2016-12-14;"PAIEMENT CARTE 13122016 NL Hutten Busine";"Paiement Carte 13122016 Nl Hutten Busine";"Restaurants, bars, discothèques…";"Loisirs et sorties";-10,00;;00040419231;BoursoBank;16880.05
+2016-12-13;2016-12-13;"VIR SEPA ROTHWELL INTERNATIONAL BV";"Vir Sepa Rothwell International Bv";"Virements reçus";"Virements reçus";"6 234,63";;00040419231;BoursoBank;16940.55
+2016-12-13;2016-12-13;"PAIEMENT CARTE 12122016 ES VUELING AIRLI";"Paiement Carte 12122016 Es Vueling Airli";"Transports longue distance (avions, trains…)";"Voyages & Transports";-29,99;;00040419231;BoursoBank;16940.55
+2016-12-13;2016-12-13;"PAIEMENT CARTE 12122016 NL Hutten Busine";"Paiement Carte 12122016 Nl Hutten Busine";"Restaurants, bars, discothèques…";"Loisirs et sorties";-6,75;;00040419231;BoursoBank;16940.55
+2016-12-12;2016-12-12;"PAIEMENT CARTE 10122016 75 AMAZON PAYMEN";"Paiement Carte 10122016 75 Amazon Paymen";"Livres, CD/DVD, bijoux, jouets…";"Vie quotidienne";-10,99;;00040419231;BoursoBank;10742.66
+2016-12-12;2016-12-12;"PAIEMENT CARTE 09122016 75 AMAZON EU SAR";"Paiement Carte 09122016 75 Amazon Eu Sar";"Livres, CD/DVD, bijoux, jouets…";"Vie quotidienne";-289,83;;00040419231;BoursoBank;10742.66
+2016-12-12;2016-12-12;"PAIEMENT CARTE 09122016 NL Hutten Busine";"Paiement Carte 09122016 Nl Hutten Busine";"Restaurants, bars, discothèques…";"Loisirs et sorties";-6,75;;00040419231;BoursoBank;10742.66
+2016-12-12;2016-12-12;"PAIEMENT CARTE 10122016 75 AMAZON PAYMEN";"Paiement Carte 10122016 75 Amazon Paymen";"Livres, CD/DVD, bijoux, jouets…";"Vie quotidienne";-79,90;;00040419231;BoursoBank;10742.66
+2016-12-09;2016-12-09;"PAIEMENT CARTE 08122016 NL Hutten Busine";"Paiement Carte 08122016 Nl Hutten Busine";"Restaurants, bars, discothèques…";"Loisirs et sorties";-6,75;;00040419231;BoursoBank;11130.13
+2016-12-08;2016-12-08;"RETRAIT DAB 07122016 ING         CB*0379";"Retrait Dab 07122016 Ing Cb*0379";"Retraits cash";"Retraits cash";-150,00;;00040419231;BoursoBank;11136.88
+2016-12-08;2016-12-08;"PAIEMENT CARTE 07122016 NL Hutten Busine";"Paiement Carte 07122016 Nl Hutten Busine";"Restaurants, bars, discothèques…";"Loisirs et sorties";-6,75;;00040419231;BoursoBank;11136.88
+2016-12-08;2016-12-08;"PAIEMENT CARTE 07122016 75 AMAZON PAYMEN";"Paiement Carte 07122016 75 Amazon Paymen";"Livres, CD/DVD, bijoux, jouets…";"Vie quotidienne";-6,99;;00040419231;BoursoBank;11136.88
+2016-12-08;2016-12-08;"PAIEMENT CARTE 06122016 75 AMAZON PAYMEN";"Paiement Carte 06122016 75 Amazon Paymen";"Livres, CD/DVD, bijoux, jouets…";"Vie quotidienne";-13,99;;00040419231;BoursoBank;11136.88
+2016-12-07;2016-12-07;"PAIEMENT CARTE 06122016 NL Hutten Busine";"Paiement Carte 06122016 Nl Hutten Busine";"Restaurants, bars, discothèques…";"Loisirs et sorties";-6,15;;00040419231;BoursoBank;11314.61
+2016-12-07;2016-12-07;"PAIEMENT CARTE 06122016 NL NS AMSTERDAM";"Paiement Carte 06122016 Nl Ns Amsterdam";Alimentation;"Vie quotidienne";-50,50;;00040419231;BoursoBank;11314.61
+2016-12-06;2016-12-06;"PAIEMENT CARTE 05122016 92 PAIEMENT BOUY";"Paiement Carte 05122016 92 Paiement Bouy";"Abonnements & téléphonie";"Abonnements & téléphonie";-10,00;;00040419231;BoursoBank;11371.26
+2016-12-06;2016-12-06;"PAIEMENT CARTE 05122016 NL TRANSAVIA   V";"Paiement Carte 05122016 Nl Transavia V";"Transports longue distance (avions, trains…)";"Voyages & Transports";-35,00;;00040419231;BoursoBank;11371.26
+2016-12-06;2016-12-06;"PAIEMENT CARTE 05122016 GB EASYJET     0";"Paiement Carte 05122016 Gb Easyjet 0";"Transports longue distance (avions, trains…)";"Voyages & Transports";-55,52;;00040419231;BoursoBank;11371.26
+2016-12-06;2016-12-06;"PAIEMENT CARTE 05122016 ES VUELING AIRLI";"Paiement Carte 05122016 Es Vueling Airli";"Transports longue distance (avions, trains…)";"Voyages & Transports";-89,98;;00040419231;BoursoBank;11371.26
+2016-12-06;2016-12-06;"PAIEMENT CARTE 05122016 GB EASYJET     0";"Paiement Carte 05122016 Gb Easyjet 0";"Transports longue distance (avions, trains…)";"Voyages & Transports";-38,87;;00040419231;BoursoBank;11371.26
+2016-12-06;2016-12-06;"VIR SEPA NSR TERUGBET REIZIGERS";"Vir Sepa Nsr Terugbet Reizigers";"Virements reçus";"Virements reçus";17,00;;00040419231;BoursoBank;11371.26
+2016-12-05;2016-12-05;"PAIEMENT CARTE 03122016 IE DELL PRODUCT";"Paiement Carte 03122016 Ie Dell Product";"Loisirs et sorties";"Loisirs et sorties";"-1 148,95";;00040419231;BoursoBank;11583.63
+2016-11-22;2016-11-22;"RETRAIT DAB 19112016 ING         CB*0379";"Retrait Dab 19112016 Ing Cb*0379";"Retraits cash";"Retraits cash";-500,00;;00040419231;BoursoBank;12732.58
+2016-11-22;2016-11-22;"PAIEMENT CARTE 17112016 75 AMAZON PAYMEN";"Paiement Carte 17112016 75 Amazon Paymen";"Livres, CD/DVD, bijoux, jouets…";"Vie quotidienne";-39,80;;00040419231;BoursoBank;12732.58
+2016-11-18;2016-11-18;"PAIEMENT CARTE 171116 NL ExpatCenter Ams";"Paiement Carte 171116 Nl Expatcenter Ams";Alimentation;"Vie quotidienne";-60,50;;00040419231;BoursoBank;13272.38
+2016-11-17;2016-11-17;"PAIEMENT CARTE 161116 NL NS SCHIPHOL";"Paiement Carte 161116 Nl Ns Schiphol";"Non catégorisé";"Non catégorisé";-50,50;;00040419231;BoursoBank;13332.88
+2016-11-15;2016-11-15;"RETRAIT DAB 141116 D ING         CB*0379";"Retrait Dab 141116 D Ing Cb*0379";"Retraits cash";"Retraits cash";-150,00;;00040419231;BoursoBank;13383.38
+2016-11-11;2016-11-11;"VIR SEPA ROTHWELL INTERNATIONAL BV";"Vir Sepa Rothwell International Bv";"Virements reçus";"Virements reçus";"2 907,33";;00040419231;BoursoBank;13533.38
+2016-10-28;2016-10-28;"PAIEMENT CARTE 261016 75 AMAZON PAYMENTS";"Paiement Carte 261016 75 Amazon Payments";"Livres, CD/DVD, bijoux, jouets…";"Vie quotidienne";-534,90;;00040419231;BoursoBank;10626.05
+2016-10-28;2016-10-28;"AVOIR 271016 75 AMAZON PAYMENTS";"Avoir 271016 75 Amazon Payments";"Livres, CD/DVD, bijoux, jouets…";"Vie quotidienne";534,90;;00040419231;BoursoBank;10626.05
+2016-10-24;2016-10-24;"RETRAIT DAB 211016 D ING         CB*0379";"Retrait Dab 211016 D Ing Cb*0379";"Retraits cash";"Retraits cash";-600,00;;00040419231;BoursoBank;10626.05
+2016-10-12;2016-10-12;"PAIEMENT CARTE 111016 06 DECATHLON";"Paiement Carte 111016 06 Decathlon";"Equipements sportifs et artistiques";"Vie quotidienne";-32,98;;00040419231;BoursoBank;11226.05
+2016-10-06;2016-10-06;"RETRAIT DAB 051016 LCL LYON MONP CB*0379";"Retrait Dab 051016 Lcl Lyon Monp Cb*0379";"Retraits cash";"Retraits cash";-20,00;;00040419231;BoursoBank;11259.03
+2016-06-20;2016-06-20;"VIR SEPA GIE PARI MUTUEL URBAIN";"Vir Sepa Gie Pari Mutuel Urbain";"Complémentaires santé";Santé;23,80;;00040419231;BoursoBank;11279.03
+2016-06-16;2016-06-16;"VIR SEPA GIE PARI MUTUEL URBAIN";"Vir Sepa Gie Pari Mutuel Urbain";"Complémentaires santé";Santé;5,20;;00040419231;BoursoBank;11255.23
+2016-05-16;2016-05-16;"PAIEMENT CARTE 150516 75 GIE PMU INTERNE";"Paiement Carte 150516 75 Gie Pmu Interne";"Dépenses Jeux et paris";"Loisirs et sorties";-100,00;;00040419231;BoursoBank;11250.03
+2016-04-22;2016-04-22;"VIR SEPA GRAS SAVOYE";"Vir Sepa Gras Savoye";"Remboursements frais de santé";Santé;32,00;;00040419231;BoursoBank;11350.03
+2016-04-04;2016-04-04;"PRLV SEPA Gras Savoye";"Prlv Sepa Gras Savoye";"Complémentaires santé";Santé;-4,00;;00040419231;BoursoBank;11318.03
+2016-04-01;2016-04-01;"PAIEMENT CARTE 310316 77 SNCF INTERNET";"Paiement Carte 310316 77 Sncf Internet";"Transports longue distance (avions, trains…)";"Voyages & Transports";-32,00;;00040419231;BoursoBank;11322.03
+2016-04-01;2016-04-01;"PAIEMENT CARTE 310316 77 SNCF INTERNET";"Paiement Carte 310316 77 Sncf Internet";"Transports longue distance (avions, trains…)";"Voyages & Transports";-35,00;;00040419231;BoursoBank;11322.03
+2016-03-23;2016-03-23;"AVOIR 170316 35 TIMBRE FISCAL";"Avoir 170316 35 Timbre Fiscal";"Impôts & Taxes - Autres";"Impôts & Taxes";86,00;;00040419231;BoursoBank;11389.03
+2016-03-23;2016-03-23;"PAIEMENT CARTE 220316 69 VELOV INTERNET";"Paiement Carte 220316 69 Velov Internet";"Transports quotidiens (métro, bus…)";"Voyages & Transports";-15,00;;00040419231;BoursoBank;11389.03
+2016-03-22;2016-03-22;"PAIEMENT CARTE 210316 75 FREE MOBILE";"Paiement Carte 210316 75 Free Mobile";"Abonnements & téléphonie";"Abonnements & téléphonie";-13,99;;00040419231;BoursoBank;11318.03
+2016-03-21;2016-03-21;"PAIEMENT CARTE 170316 35 TIMBRE FISCAL";"Paiement Carte 170316 35 Timbre Fiscal";"Impôts & Taxes - Autres";"Impôts & Taxes";-86,00;;00040419231;BoursoBank;11332.02
+2016-03-21;2016-03-21;"PAIEMENT CARTE 180316 69 TCL";"Paiement Carte 180316 69 Tcl";"Transports quotidiens (métro, bus…)";"Voyages & Transports";-5,40;;00040419231;BoursoBank;11332.02
+2016-03-04;2016-03-04;"PRLV SEPA Gras Savoye";"Prlv Sepa Gras Savoye";"Complémentaires santé";Santé;-4,00;;00040419231;BoursoBank;11423.42
+2016-02-23;2016-02-23;"RETRAIT DAB 210216 D GUTIERREZ 1 CB*0270";"Retrait Dab 210216 D Gutierrez 1 Cb*0270";"Retraits cash";"Retraits cash";-90,35;;00040419231;BoursoBank;11427.42
+2016-02-23;2016-02-23;"*CION CB OPERAT.ETRANGER EN DEV 4979****";"*cion Cb Operat.etranger En Dev 4979****";"Frais bancaires et de gestion (dont agios)";"Services financiers & professionnels";-1,78;;00040419231;BoursoBank;11427.42
+2016-02-19;2016-02-19;"RETRAIT DAB 170216 D AV. PASEO C CB*0270";"Retrait Dab 170216 D Av. Paseo C Cb*0270";"Retraits cash";"Retraits cash";-152,02;;00040419231;BoursoBank;11519.55
+2016-02-19;2016-02-19;"*CION CB OPERAT.ETRANGER EN DEV 4979****";"*cion Cb Operat.etranger En Dev 4979****";"Frais bancaires et de gestion (dont agios)";"Services financiers & professionnels";-3,00;;00040419231;BoursoBank;11519.55
+2016-02-17;2016-02-17;"PAIEMENT CARTE 140216 BR AVIANCA";"Paiement Carte 140216 Br Avianca";"Transports longue distance (avions, trains…)";"Voyages & Transports";-72,79;;00040419231;BoursoBank;11674.57
+2016-02-17;2016-02-17;"*CION CB OPERAT.ETRANGER EN DEV 4979****";"*cion Cb Operat.etranger En Dev 4979****";"Frais bancaires et de gestion (dont agios)";"Services financiers & professionnels";-1,44;;00040419231;BoursoBank;11674.57
+2016-02-10;2016-02-10;"PAIEMENT CARTE 090216 DE CONDOR";"Paiement Carte 090216 De Condor";Alimentation;"Vie quotidienne";-249,99;;00040419231;BoursoBank;11748.8
+2016-02-04;2016-02-04;"PRLV SEPA Gras Savoye";"Prlv Sepa Gras Savoye";"Complémentaires santé";Santé;-4,00;;00040419231;BoursoBank;11998.79
+2016-01-07;2016-01-07;"PAIEMENT CARTE 060116 69 DECATHLON";"Paiement Carte 060116 69 Decathlon";"Equipements sportifs et artistiques";"Vie quotidienne";-114,68;;00040419231;BoursoBank;12002.79
+2016-01-05;2016-01-05;"PRLV SEPA Gras Savoye";"Prlv Sepa Gras Savoye";"Complémentaires santé";Santé;-4,00;;00040419231;BoursoBank;12117.47
+2015-12-04;2015-12-04;"PRLV SEPA Gras Savoye";"Prlv Sepa Gras Savoye";"Complémentaires santé";Santé;-4,00;;00040419231;BoursoBank;12121.47
+2015-11-05;2015-11-05;"PRLV SEPA Gras Savoye";"Prlv Sepa Gras Savoye";"Complémentaires santé";Santé;-4,00;;00040419231;BoursoBank;12125.47
+2015-10-07;2015-10-07;"PRLV SEPA Gras Savoye";"Prlv Sepa Gras Savoye";"Complémentaires santé";Santé;-8,00;;00040419231;BoursoBank;12129.47
+2015-09-01;2015-09-01;"RETRAIT DAB 290815 GAB EXT MONPL CB*0270";"Retrait Dab 290815 Gab Ext Monpl Cb*0270";"Retraits cash";"Retraits cash";-30,00;;00040419231;BoursoBank;12137.47
+2015-08-31;2015-08-31;"RETRAIT DAB 300815 LCL LYON MONP CB*0270";"Retrait Dab 300815 Lcl Lyon Monp Cb*0270";"Retraits cash";"Retraits cash";-40,00;;00040419231;BoursoBank;12167.47
+2015-08-31;2015-08-31;"PAIEMENT CARTE 300815 69 MC DONALDS LYON";"Paiement Carte 300815 69 Mc Donalds Lyon";"Restaurants, bars, discothèques…";"Loisirs et sorties";-3,20;;00040419231;BoursoBank;12167.47
+2015-08-27;2015-08-27;"RETRAIT DAB 260815 LCL LYON MONP CB*0270";"Retrait Dab 260815 Lcl Lyon Monp Cb*0270";"Retraits cash";"Retraits cash";-20,00;;00040419231;BoursoBank;12210.67
+2015-06-23;2015-06-23;"VIR SEPA ZEPASS";"Vir Sepa Zepass";"Virements reçus";"Virements reçus";160,00;;00040419231;BoursoBank;12230.67
+2015-05-21;2015-05-21;"VIR VIREMENT CREATION COMPTE";"Vir Virement Creation Compte";"Virements reçus";"Virements reçus";"12 000,00";;00040419231;BoursoBank;12070.67
+2015-05-21;2015-05-21;"PRIME DE PARRAINAGE";"Prime De Parrainage";"Remboursement de frais / offres BoursoBank";"Services financiers & professionnels";80,00;;00040419231;BoursoBank;12070.67

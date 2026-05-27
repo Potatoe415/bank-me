@@ -2,6 +2,7 @@ import db from "@/lib/db";
 import { disconnectBank } from "@/app/actions";
 import { getBankById } from "@/lib/banks.config";
 import DisconnectButton from "./DisconnectButton";
+import MaintenancePromptBox from "./MaintenancePromptBox";
 
 type SessionRow = {
   provider: string;
@@ -278,6 +279,10 @@ export default function SettingsPage() {
               </Row>
             </div>
           </Card>
+        </Section>
+
+        <Section title="Maintenance — Prompt à copier-coller">
+          <MaintenancePromptBox />
         </Section>
 
         <Section title="Guide d'utilisation">

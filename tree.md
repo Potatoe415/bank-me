@@ -52,6 +52,12 @@ bank-me/
 |-- .env.local                   # Secrets (gitignored) - see .env.local.example
 |-- next.config.ts
 |-- AGENTS.md                    # AI agent rules for this project
+|-- scripts/
+|   |-- import_ing_history.py        # Standalone Python script: imports historical ING CSV exports into data.db
+|   |-- import_boursorama_history.py # Standalone Python script: imports historical Boursorama CSV exports into data.db
+|   |-- import_revolut_history.py    # Standalone Python script: imports historical Revolut CSV exports into data.db
+|   |-- import_amex_history.py       # Standalone Python script: imports historical American Express CSV exports into data.db
+|   `-- propagate_categories.py      # Standalone Python script: propagates category/subcategory labels to uncategorized transactions in data.db
 |-- tree.md                      # This file
 |-- MAGNUM.md                    # Technical knowledge base
 |-- taxonomy_prompt.md           # Markdown source for the taxonomy prompt shown in /export
@@ -78,6 +84,10 @@ bank-me/
 | category | TEXT | nullable - taxonomy import/export use |
 | subcategory | TEXT | nullable - taxonomy import/export use |
 | archived_at | TEXT | nullable - ISO datetime when the transaction is archived |
+| source | TEXT | NOT NULL default 'api_enablebanking' — data lineage ('api_enablebanking', 'csv_ing_historical', …) |
+| is_deleted | INTEGER | NOT NULL default 0 — soft delete flag (0 = active, 1 = deleted) |
+| counterparty_iban | TEXT | nullable - counterparty IBAN (populated by CSV import) |
+| resulting_balance | REAL | nullable - account balance after transaction (populated by CSV import) |
 
 ### provider_tokens
 | Column | Type | Notes |

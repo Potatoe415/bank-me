@@ -13,6 +13,10 @@ export type Transaction = {
   category: string | null;
   subcategory: string | null;
   archived_at: string | null;
+  source: string;
+  is_deleted: number;
+  counterparty_iban: string | null;
+  resulting_balance: number | null;
 };
 
 export type Balance = {

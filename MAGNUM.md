@@ -152,3 +152,80 @@ Add the tunnel domain to `allowedDevOrigins` in `next.config.ts` to suppress HMR
 4. `handleCallback()` must return `bankId`
 5. `syncTransactions()` must catch sync errors and redirect with `sync_error`
 6. Boursorama pending card authorizations must not be ingested alongside booked transactions
+
+## Data Lineage & Soft Deletes
+
+- `transactions.source` (TEXT NOT NULL DEFAULT 'api_enablebanking') identifies the ingestion origin
+  - `'api_enablebanking'` — live sync via Enable Banking PSD2 API
+  - `'csv_ing_historical'` — historical CSV import via `scripts/import_ing_history.py`
+- `transactions.is_deleted` (INTEGER NOT NULL DEFAULT 0) is a soft-delete flag: 0 = active, 1 = deleted
+- `transactions.counterparty_iban` (TEXT nullable) — counterparty IBAN; populated by CSV import
+- `transactions.resulting_balance` (REAL nullable) — account balance after the transaction; populated by CSV import
+- The `Transaction` type in `lib/providers/types.ts` includes all four fields; all providers must set them
+- `INSERT OR IGNORE` in the Python importer prevents re-importing a previously soft-deleted row (its PK is still occupied)
+
+## Historical CSV Import (ING)
+
+- Script: `scripts/import_ing_history.py`
+- Input: `historical_data/ing/*.csv` (semicolon-delimited, UTF-8, ING NL export format)
+- Standard library only — no pip dependencies
+- Row ID: MD5 of `Date_Amount(EUR)_Name/Description_Counterparty_Resulting balance`
+- Debit/Credit sign applied from the `Debit/credit` column
+- `description` = `Name / Description | Notifications` (notifications appended only when non-empty)
+- `counterpart` = `Name / Description` column (human name, not IBAN)
+- `counterparty_iban` = `Counterparty` column (IBAN string, NULL if blank)
+- All imported rows get `currency = 'EUR'`, `bank_id = 'ing-nl'`, `source = 'csv_ing_historical'`
+- Run command: `python scripts/import_ing_history.py`
+
+## Historical CSV Import (Boursorama)
+
+- Script: `scripts/import_boursorama_history.py`
+- Input: `historical_data/boursorama/*.csv` (semicolon-delimited, **UTF-8 BOM**, Boursorama export format)
+- Standard library only — no pip dependencies
+- Row ID: MD5 of `{filename}_{row_index}_{dateOp}_{amount}_{label}` — row index prevents collisions on consecutive identical transactions
+- Amount: strip internal spaces (thousand separators), swap comma→period, sign already correct in source
+- `tx_type` deduced from label prefix: `CARTE` → CARD_PAYMENT, `PRLV` → DIRECT_DEBIT, `VIREMENT` → TRANSFER, else NULL
+- `description` = `label` column; `counterpart` and `counterparty_iban` left NULL (not in source)
+- All imported rows get `currency = 'EUR'`, `bank_id = 'boursorama'`, `source = 'csv_boursorama_historical'`
+- File encoding must be `utf-8-sig` (Boursorama exports include a UTF-8 BOM)
+- Run command: `python scripts/import_boursorama_history.py`
+
+## Historical CSV Import (Revolut)
+
+- Script: `scripts/import_revolut_history.py`
+- Input: `historical_data/revolut/*.csv` (comma-delimited, UTF-8, no BOM, Revolut export format)
+- Standard library only — no pip dependencies
+- Row ID: MD5 of `{filename}_{row_index}_{Started Date}_{Amount}_{Description}` — index prevents collisions on consecutive identical purchases
+- `date` = first 10 chars of `Started Date` (strips time component)
+- Amount: already signed and period-formatted — cast directly to float
+- `tx_type` mapped: `Card Payment` → CARD_PAYMENT, `Transfer` → TRANSFER, `Deposit` → DEPOSIT, else uppercased raw value
+- `resulting_balance`: empty or `NaN` on REVERTED rows → stored as NULL
+- `is_deleted`: REVERTED rows → 1 (soft-deleted), all others → 0; retains historical trace while excluding from analytics
+- `currency` taken from the `Currency` column (Revolut is multi-currency)
+- Run command: `python scripts/import_revolut_history.py`
+
+## Historical CSV Import (American Express)
+
+- Script: `scripts/import_amex_history.py`
+- Input: `historical_data/amex/*.csv` (comma-delimited, UTF-8, no BOM, Amex FR export format)
+- Standard library only — no pip dependencies
+- Row ID: MD5 of `{filename}_{row_index}_{Référence stripped of single quotes}` — index prevents collisions; Référence provides natural uniqueness per statement
+- `date`: `MM/DD/YYYY` → `YYYY-MM-DD` conversion
+- Amount: strip spaces (thousand sep), swap comma→period, **invert sign** (Amex exports charges as positive; schema convention is negative)
+- `tx_type`: `CREDIT_CARD_REPAYMENT` when `Description` contains "PRELEVEMENT", else `CARD_PAYMENT`
+- `resulting_balance`: always NULL (Amex statement files do not include a running balance per row)
+- `Adresse` field contains embedded newlines inside quoted values — `csv.DictReader` handles this natively
+- `bank_id = 'americanex'` (matches `banks.config.ts` entry; input directory is `historical_data/amex/`)
+- Run command: `python scripts/import_amex_history.py`
+
+## Category Propagation Script
+
+- Script: `scripts/propagate_categories.py`
+- Purpose: Wave 1 cleanup for uncategorized transactions by reusing existing `category` and `subcategory` labels already present in `transactions`
+- Standard library only: `sqlite3`, `re`
+- It updates only `transactions.category` and `transactions.subcategory`, inside one SQLite transaction
+- Pass 1: exact `counterparty_iban` match against already categorized rows
+- Pass 2: exact match on a regex-cleaned `description` root after stripping common dates, `CB*` card tokens, and trailing technical references
+- Pass 3: fallback substring match on a fixed provider keyword list (`Uber`, `Lidl`, `Netflix`, `SNCF`, `Free Mobile`, `Glovo`, `Amazon`) using the historical category already associated with each keyword
+- Safety rule: ambiguous historical signals are skipped rather than propagated
+- Run command: `python scripts/propagate_categories.py`

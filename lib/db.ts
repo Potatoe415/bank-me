@@ -46,5 +46,13 @@ try { db.exec("ALTER TABLE transactions ADD COLUMN card_network TEXT"); } catch 
 try { db.exec("ALTER TABLE transactions ADD COLUMN category TEXT"); } catch {}
 try { db.exec("ALTER TABLE transactions ADD COLUMN subcategory TEXT"); } catch {}
 try { db.exec("ALTER TABLE transactions ADD COLUMN archived_at TEXT"); } catch {}
+try { db.exec("ALTER TABLE transactions ADD COLUMN source TEXT NOT NULL DEFAULT 'api_enablebanking'"); } catch {}
+try { db.exec("ALTER TABLE transactions ADD COLUMN is_deleted INTEGER NOT NULL DEFAULT 0"); } catch {}
+try { db.exec("ALTER TABLE transactions ADD COLUMN counterparty_iban TEXT"); } catch {}
+try { db.exec("ALTER TABLE transactions ADD COLUMN resulting_balance REAL"); } catch {}
+
+// Backfill existing rows to satisfy NOT NULL constraints on newly added columns
+db.exec("UPDATE transactions SET source = 'api_enablebanking' WHERE source IS NULL OR source = ''");
+db.exec("UPDATE transactions SET is_deleted = 0 WHERE is_deleted IS NULL");
 
 export default db;

@@ -8,9 +8,9 @@ import { importCategoriesCsv } from "@/lib/category-import";
 
 const insertTx = db.prepare(
   `INSERT INTO transactions
-     (id, date, value_date, amount, currency, description, counterpart, tx_type, card_last4, card_network, bank_id, category, subcategory, archived_at)
+     (id, date, value_date, amount, currency, description, counterpart, tx_type, card_last4, card_network, bank_id, category, subcategory, archived_at, source, is_deleted, counterparty_iban, resulting_balance)
    VALUES
-     (@id, @date, @value_date, @amount, @currency, @description, @counterpart, @tx_type, @card_last4, @card_network, @bank_id, @category, @subcategory, @archived_at)
+     (@id, @date, @value_date, @amount, @currency, @description, @counterpart, @tx_type, @card_last4, @card_network, @bank_id, @category, @subcategory, @archived_at, @source, @is_deleted, @counterparty_iban, @resulting_balance)
    ON CONFLICT(id) DO UPDATE SET
      category = COALESCE(excluded.category, transactions.category),
      subcategory = COALESCE(excluded.subcategory, transactions.subcategory)`

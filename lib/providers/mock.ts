@@ -12,6 +12,10 @@ function mockTransaction(tx: Pick<Transaction, "id" | "date" | "amount" | "curre
     category: null,
     subcategory: null,
     archived_at: null,
+    source: 'api_enablebanking',
+    is_deleted: 0,
+    counterparty_iban: null,
+    resulting_balance: null,
   };
 }
 
