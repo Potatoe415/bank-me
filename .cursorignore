@@ -1,0 +1,35 @@
+# Secrets: never expose to AI context
+.env
+.env.*
+!.env.example
+
+# Local database (personal financial data)
+data.db
+*.db
+*.sqlite
+*.dump
+
+# Dependencies and build output
+node_modules/
+dist/
+build/
+out/
+.next/
+coverage/
+
+# Logs and temp
+*.log
+logs/
+tmp/
+temp/
+.cache/
+
+# Large local data and review artifacts
+historical_data/
+uncategorized_batch_*.csv
+uncategorized_batch_*_reviewed.csv
+unknown_batch_*.csv
+unknown_batch_*_reviewed.csv
+uncategorized_remaining.csv
+unknown_remaining.csv
+manual_category_trace.ndjson

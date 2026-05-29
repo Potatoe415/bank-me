@@ -39,3 +39,28 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local database (do not commit — contains personal financial data)
+data.db
+*.db
+*.sqlite
+*.dump
+
+# logs
+*.log
+logs/
+
+# temp / review batch files (work artifacts, not source)
+uncategorized_batch_*.csv
+uncategorized_batch_*_reviewed.csv
+unknown_batch_*.csv
+unknown_batch_*_reviewed.csv
+uncategorized_remaining.csv
+unknown_remaining.csv
+manual_category_trace.ndjson
+
+# OS
+Thumbs.db
+tmp/
+temp/
+.cache/

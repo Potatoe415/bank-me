@@ -1,10 +1,15 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
 import db from "@/lib/db";
 import { getBankById } from "@/lib/banks.config";
 import { getProvider } from "@/lib/providers";
 import type { Transaction } from "@/lib/providers/types";
-import { syncTransactions, toggleTransactionArchive } from "./actions";
+import { buildEditableTaxonomy, formatCategoryPath, type EditableTaxonomy } from "@/lib/taxonomy";
+import { isTransactionEditModeEnabled, TRANSACTION_EDIT_MODE_COOKIE } from "@/lib/transaction-edit-mode";
+import { COLUMN_PREFS_COOKIE, parseHiddenColumns } from "@/lib/column-prefs";
+import { syncTransactions } from "./actions";
 import TransactionFilters from "./components/TransactionFilters";
+import TransactionsTable from "./components/TransactionsTable";
 
 function getAccountUids(bankId: string): string[] {
   const row = db
@@ -13,22 +18,8 @@ function getAccountUids(bankId: string): string[] {
   return row ? JSON.parse(row.account_uids) : [];
 }
 
-const TX_TYPE_LABELS: Record<string, string> = {
-  CARD_PAYMENT: "Card",
-  TRANSFER: "Transfer",
-  DIRECT_DEBIT: "Direct debit",
-  CASH: "Cash",
-  FEE: "Fees",
-  INTEREST: "Interest",
-  DIVIDEND: "Dividend",
-  REFUND: "Refund",
-  LOAN: "Loan",
-  EXCHANGE: "Exchange",
-};
-
 const PAGE_SIZE = 100;
 const EMPTY_FILTER_VALUE = "__empty__";
-const INTERNAL_TRANSFER_CATEGORY = "Internal Transfer";
 
 type SearchParamsInput = Record<string, string | string[] | undefined>;
 
@@ -40,7 +31,7 @@ type QueryFilters = {
   from: string | null;
   to: string | null;
   category: string | null;
-  subcategory: string | null;
+  reviewStatus: string | null;
   query: string | null;
   amountInput: string;
   amountOperator: "=" | ">" | "<" | ">=" | "<=" | null;
@@ -61,9 +52,12 @@ type SqlFilterOptions = {
   activeOnly?: boolean;
 };
 
-type DateBoundsRow = {
-  first_date: string | null;
-  last_date: string | null;
+type PaginatedTransactionsResult = {
+  totalActive: number;
+  displayTotal: number;
+  totalPages: number;
+  currentPage: number;
+  transactions: Transaction[];
 };
 
 function firstString(value: string | string[] | undefined) {
@@ -156,59 +150,56 @@ function buildSqlFilters(bankId: string | null, filters: QueryFilters, options: 
   }
 
   if (filters.category === EMPTY_FILTER_VALUE) {
-    clauses.push("(category IS NULL OR TRIM(category) = '')");
+    clauses.push("category_path = 'uncategorized'");
   } else if (filters.category) {
-    clauses.push("category = @category");
+    clauses.push("category_path = @category");
     params.category = filters.category;
   }
 
-  if (filters.subcategory === EMPTY_FILTER_VALUE) {
-    clauses.push("(subcategory IS NULL OR TRIM(subcategory) = '')");
-  } else if (filters.subcategory) {
-    clauses.push("subcategory = @subcategory");
-    params.subcategory = filters.subcategory;
+  if (filters.reviewStatus) {
+    clauses.push("review_status = @reviewStatus");
+    params.reviewStatus = filters.reviewStatus;
   }
 
   const whereSql = clauses.length > 0 ? `WHERE ${clauses.join(" AND ")}` : "";
   return { whereSql, params };
 }
 
-function getDistinctFilterOptions(
-  column: "category" | "subcategory",
-  bankId: string | null,
-  filters: QueryFilters
-) {
-  const optionFilters: QueryFilters = { ...filters };
-
-  if (column === "category") {
-    optionFilters.category = null;
-    optionFilters.subcategory = null;
-  } else {
-    optionFilters.subcategory = null;
-  }
-
+function getDistinctCategoryOptions(bankId: string | null, filters: QueryFilters) {
+  const optionFilters: QueryFilters = { ...filters, category: null };
   const { whereSql, params } = buildSqlFilters(bankId, optionFilters, { activeOnly: true });
   const rows = db
-    .prepare(`SELECT DISTINCT ${column} FROM transactions ${whereSql} ORDER BY ${column} COLLATE NOCASE ASC`)
-    .all(params) as Array<{ [K in typeof column]: string | null }>;
+    .prepare(
+      `SELECT DISTINCT category_path FROM transactions ${whereSql}
+       ORDER BY category_path COLLATE NOCASE ASC`
+    )
+    .all(params) as Array<{ category_path: string }>;
 
   const options: FilterOption[] = [];
-  let hasEmptyValue = false;
+  let hasUncategorized = false;
 
   for (const row of rows) {
-    const rawValue = row[column];
-    if (rawValue === null || rawValue.trim() === "") {
-      hasEmptyValue = true;
+    const path = row.category_path;
+    if (!path || path === "uncategorized") {
+      hasUncategorized = true;
       continue;
     }
-    options.push({ value: rawValue, label: rawValue });
+    options.push({ value: path, label: formatCategoryPath(path) });
   }
 
-  if (hasEmptyValue) {
+  if (hasUncategorized) {
     options.unshift({ value: EMPTY_FILTER_VALUE, label: "Uncategorized" });
   }
 
   return options;
+}
+
+function getEditableTaxonomyOptions(): EditableTaxonomy {
+  const rows = db
+    .prepare("SELECT category FROM taxonomy_entries ORDER BY category COLLATE NOCASE ASC")
+    .all() as Array<{ category: string | null }>;
+
+  return buildEditableTaxonomy(rows);
 }
 
 function getVisibleTotals(transactions: Transaction[]) {
@@ -216,7 +207,7 @@ function getVisibleTotals(transactions: Transaction[]) {
 
   for (const tx of transactions) {
     if (tx.archived_at) continue;
-    if (tx.category === INTERNAL_TRANSFER_CATEGORY) continue;
+    if (tx.is_excluded_from_spending) continue;
     totals.set(tx.currency, (totals.get(tx.currency) ?? 0) + tx.amount);
   }
 
@@ -225,6 +216,60 @@ function getVisibleTotals(transactions: Transaction[]) {
 
 function countArchived(transactions: Transaction[]) {
   return transactions.filter((tx) => tx.archived_at !== null).length;
+}
+
+function buildPageHref(bankId: string, page: number, filters: QueryFilters) {
+  const params = new URLSearchParams({ bank: bankId, page: String(page) });
+
+  if (filters.from) params.set("from", filters.from);
+  if (filters.to) params.set("to", filters.to);
+  if (filters.category) params.set("category", filters.category);
+  if (filters.reviewStatus) params.set("review_status", filters.reviewStatus);
+  if (filters.query) params.set("query", filters.query);
+  if (filters.amountInput) params.set("amount", filters.amountInput);
+
+  return `/?${params.toString()}`;
+}
+
+function getPaginatedTransactions(
+  bankId: string | null,
+  filters: QueryFilters,
+  rawPage: string | undefined
+): PaginatedTransactionsResult {
+  const safePage = Math.max(1, parseInt(rawPage ?? "1", 10) || 1);
+  const { whereSql, params } = buildSqlFilters(bankId, filters);
+  const { whereSql: activeWhereSql, params: activeParams } = buildSqlFilters(bankId, filters, { activeOnly: true });
+
+  const { count: totalActive } = db
+    .prepare(`SELECT COUNT(*) as count FROM transactions ${activeWhereSql}`)
+    .get(activeParams) as { count: number };
+  const { count: displayTotal } = db
+    .prepare(`SELECT COUNT(*) as count FROM transactions ${whereSql}`)
+    .get(params) as { count: number };
+
+  const totalPages = Math.max(1, Math.ceil(displayTotal / PAGE_SIZE));
+  const currentPage = Math.min(safePage, totalPages);
+  const offset = (currentPage - 1) * PAGE_SIZE;
+  const orderBy = filters.reviewStatus === "needs_review"
+    ? `ORDER BY CASE confidence_level WHEN 'low' THEN 1 WHEN 'medium' THEN 2 WHEN 'high' THEN 3 ELSE 4 END ASC, date DESC`
+    : `ORDER BY date DESC`;
+
+  const transactions = db
+    .prepare(
+      `SELECT * FROM transactions
+       ${whereSql}
+       ${orderBy}
+       LIMIT @limit OFFSET @offset`
+    )
+    .all({ ...params, limit: PAGE_SIZE, offset }) as Transaction[];
+
+  return {
+    totalActive,
+    displayTotal,
+    totalPages,
+    currentPage,
+    transactions,
+  };
 }
 
 function resultLabel(activeCount: number, archivedCount: number, totalActive?: number) {
@@ -236,64 +281,74 @@ function fmt(amount: number, currency: string) {
   return new Intl.NumberFormat("fr-FR", { style: "currency", currency }).format(amount);
 }
 
-function fmtDate(iso: string | null) {
-  if (!iso) return "-";
-  return new Date(iso).toLocaleDateString("fr-FR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
+function formatDateInput(date: Date) {
+  return date.toISOString().slice(0, 10);
 }
 
-function ArchiveButton({ isArchived, transactionId }: { isArchived: boolean; transactionId: string }) {
+function getDefaultDateRange() {
+  const today = new Date();
+  const from = new Date(today);
+  from.setMonth(from.getMonth() - 3);
+
+  return {
+    from: formatDateInput(from),
+    to: formatDateInput(today),
+  };
+}
+
+function PaginationNav({
+  bankId,
+  filters,
+  currentPage,
+  totalPages,
+}: {
+  bankId: string;
+  filters: QueryFilters;
+  currentPage: number;
+  totalPages: number;
+}) {
+  if (totalPages <= 1) {
+    return null;
+  }
+
   return (
-    <form action={toggleTransactionArchive.bind(null, transactionId)}>
-      <button
-        type="submit"
-        title={isArchived ? "Restore transaction" : "Archive transaction"}
-        aria-label={isArchived ? "Restore transaction" : "Archive transaction"}
-        className={`inline-flex h-8 w-8 items-center justify-center rounded-md border transition-colors ${
-          isArchived
-            ? "border-gray-300 bg-white text-gray-600 hover:bg-gray-100"
-            : "border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100"
-        }`}
-      >
-        {isArchived ? (
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-            <path d="M2.75 5.75h10.5v7a1 1 0 0 1-1 1h-8.5a1 1 0 0 1-1-1v-7Z" stroke="currentColor" strokeWidth="1.25" />
-            <path d="M1.75 3.25h12.5v2.5H1.75v-2.5Z" stroke="currentColor" strokeWidth="1.25" />
-            <path d="M8 11V7.5m0 0-1.75 1.75M8 7.5l1.75 1.75" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        ) : (
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-            <path d="M2.75 5.75h10.5v7a1 1 0 0 1-1 1h-8.5a1 1 0 0 1-1-1v-7Z" stroke="currentColor" strokeWidth="1.25" />
-            <path d="M1.75 3.25h12.5v2.5H1.75v-2.5Z" stroke="currentColor" strokeWidth="1.25" />
-            <path d="M5.5 8h5" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" />
-          </svg>
+    <div className="mt-4 flex items-center justify-between">
+      <span className="text-xs text-gray-400">
+        Page {currentPage} of {totalPages}
+      </span>
+      <div className="flex gap-1">
+        {currentPage > 1 && (
+          <Link
+            href={buildPageHref(bankId, currentPage - 1, filters)}
+            className="rounded-md border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-600 transition-colors hover:bg-gray-50"
+          >
+            Previous
+          </Link>
         )}
-      </button>
-    </form>
+        {currentPage < totalPages && (
+          <Link
+            href={buildPageHref(bankId, currentPage + 1, filters)}
+            className="rounded-md border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-600 transition-colors hover:bg-gray-50"
+          >
+            Next
+          </Link>
+        )}
+      </div>
+    </div>
   );
 }
 
 export default async function Home({ searchParams }: PageProps) {
+  const cookieStore = await cookies();
+  const isEditMode = isTransactionEditModeEnabled(cookieStore.get(TRANSACTION_EDIT_MODE_COOKIE)?.value);
+  const hiddenColumns = parseHiddenColumns(cookieStore.get(COLUMN_PREFS_COOKIE)?.value);
+  const taxonomy = getEditableTaxonomyOptions();
   const rawParams = await searchParams;
   const error = firstString(rawParams.error);
   const syncError = firstString(rawParams.sync_error);
   const bankId = firstString(rawParams.bank) ?? "revolut";
   const rawPage = firstString(rawParams.page);
-  const globalDateBounds = db
-    .prepare(
-      `SELECT
-         MIN(SUBSTR(date, 1, 10)) as first_date,
-         MAX(SUBSTR(date, 1, 10)) as last_date
-       FROM transactions
-       WHERE archived_at IS NULL`
-    )
-    .get() as DateBoundsRow;
-
-  const defaultFrom = globalDateBounds.first_date ?? "";
-  const defaultTo = globalDateBounds.last_date ?? "";
+  const defaultDateRange = getDefaultDateRange();
 
   const amountFilter = parseAmountFilter(normalizeAmountInput(firstString(rawParams.amount)));
 
@@ -301,7 +356,7 @@ export default async function Home({ searchParams }: PageProps) {
     from: normalizeDate(firstString(rawParams.from)),
     to: normalizeDate(firstString(rawParams.to)),
     category: normalizeText(firstString(rawParams.category)),
-    subcategory: normalizeText(firstString(rawParams.subcategory)),
+    reviewStatus: normalizeText(firstString(rawParams.review_status)),
     query: normalizeText(firstString(rawParams.query)),
     amountInput: normalizeAmountInput(firstString(rawParams.amount)),
     amountOperator: amountFilter.amountOperator,
@@ -309,13 +364,12 @@ export default async function Home({ searchParams }: PageProps) {
   };
 
   const visibleBankId = bankId === "all" ? null : bankId;
-  const categoryOptions = getDistinctFilterOptions("category", visibleBankId, filters);
-  const subcategoryOptions = getDistinctFilterOptions("subcategory", visibleBankId, filters);
+  const categoryOptions = getDistinctCategoryOptions(visibleBankId, filters);
   const hasActiveFilters = Boolean(
     filters.from ||
       filters.to ||
       filters.category ||
-      filters.subcategory ||
+      filters.reviewStatus ||
       filters.query ||
       filters.amountInput
   );
@@ -323,71 +377,43 @@ export default async function Home({ searchParams }: PageProps) {
   const filterProps = {
     bankId,
     initialValues: {
-      from: filters.from ?? defaultFrom,
-      to: filters.to ?? defaultTo,
+      from: filters.from ?? defaultDateRange.from,
+      to: filters.to ?? defaultDateRange.to,
       category: filters.category ?? "",
-      subcategory: filters.subcategory ?? "",
+      reviewStatus: filters.reviewStatus ?? "",
       query: filters.query ?? "",
       amount: filters.amountInput,
     },
     categoryOptions,
-    subcategoryOptions,
     resetHref: `/?bank=${bankId}`,
     hasActiveFilters,
   };
 
   if (bankId === "all") {
-    const safePage = Math.max(1, parseInt(rawPage ?? "1", 10) || 1);
-    const { whereSql, params } = buildSqlFilters(null, filters);
-    const { whereSql: activeWhereSql, params: activeParams } = buildSqlFilters(null, filters, { activeOnly: true });
-
-    const { count: total } = db
-      .prepare(`SELECT COUNT(*) as count FROM transactions ${activeWhereSql}`)
-      .get(activeParams) as { count: number };
-    const { count: displayTotal } = db
-      .prepare(`SELECT COUNT(*) as count FROM transactions ${whereSql}`)
-      .get(params) as { count: number };
-
-    const totalPages = Math.max(1, Math.ceil(displayTotal / PAGE_SIZE));
-    const currentPage = Math.min(safePage, totalPages);
-    const offset = (currentPage - 1) * PAGE_SIZE;
-
-    const transactions = db
-      .prepare(
-        `SELECT * FROM transactions
-         ${whereSql}
-         ORDER BY date DESC
-         LIMIT @limit OFFSET @offset`
-      )
-      .all({ ...params, limit: PAGE_SIZE, offset }) as Transaction[];
-
+    const { totalActive, transactions, totalPages, currentPage } = getPaginatedTransactions(null, filters, rawPage);
     const visibleTotals = getVisibleTotals(transactions);
     const archivedShown = countArchived(transactions);
     const activeShown = transactions.length - archivedShown;
 
-    function pageLink(page: number) {
-      const nextParams = new URLSearchParams({ bank: "all", page: String(page) });
-      if (filters.from) nextParams.set("from", filters.from);
-      if (filters.to) nextParams.set("to", filters.to);
-      if (filters.category) nextParams.set("category", filters.category);
-      if (filters.subcategory) nextParams.set("subcategory", filters.subcategory);
-      if (filters.query) nextParams.set("query", filters.query);
-      if (filters.amountInput) nextParams.set("amount", filters.amountInput);
-      return `/?${nextParams.toString()}`;
-    }
-
     return (
       <main className="px-8 py-8">
         <div className="mb-6 flex items-center justify-between gap-3">
-          <h1 className="text-xl font-semibold text-gray-900">All banks</h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-xl font-semibold text-gray-900">All banks</h1>
+            {isEditMode && (
+              <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs text-emerald-700">
+                Edit mode
+              </span>
+            )}
+          </div>
           <span className="text-xs text-gray-400">
-            {total} active transaction{total > 1 ? "s" : ""}
+            {totalActive} active transaction{totalActive > 1 ? "s" : ""}
           </span>
         </div>
 
         <TransactionFilters
           {...filterProps}
-          resultLabel={resultLabel(activeShown, archivedShown, total)}
+          resultLabel={resultLabel(activeShown, archivedShown, totalActive)}
           totalLabel={visibleTotals.length > 0 ? `Visible total: ${visibleTotals.join(" | ")}` : null}
         />
 
@@ -395,124 +421,8 @@ export default async function Home({ searchParams }: PageProps) {
           <p className="text-sm text-gray-500">No transactions found.</p>
         ) : (
           <>
-            <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
-              <table className="w-full whitespace-nowrap text-sm">
-                <thead className="border-b border-gray-200 bg-gray-50 text-[11px] uppercase tracking-wide text-gray-500">
-                  <tr>
-                    <th className="px-3 py-2.5 text-left font-semibold">Date</th>
-                    <th className="px-3 py-2.5 text-left font-semibold">Bank</th>
-                    <th className="px-3 py-2.5 text-left font-semibold">Type</th>
-                    <th className="px-3 py-2.5 text-left font-semibold">Description</th>
-                    <th className="px-3 py-2.5 text-left font-semibold">Counterpart</th>
-                    <th className="px-3 py-2.5 text-left font-semibold">Card</th>
-                    <th className="px-3 py-2.5 text-left font-semibold">Category</th>
-                    <th className="px-3 py-2.5 text-left font-semibold">Subcategory</th>
-                    <th className="px-3 py-2.5 text-right font-semibold">Amount</th>
-                    <th className="w-14 px-2 py-2.5 text-right font-semibold"> </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {transactions.map((tx) => {
-                    const cfg = getBankById(tx.bank_id);
-                    const isArchived = tx.archived_at !== null;
-                    return (
-                      <tr key={tx.id} className={`transition-colors ${isArchived ? "bg-gray-50 text-gray-400" : "hover:bg-gray-50"}`}>
-                        <td className={`px-3 py-2 ${isArchived ? "text-gray-400" : "text-gray-500"}`}>{fmtDate(tx.date)}</td>
-                        <td className="px-3 py-2">
-                          <Link href={`/?bank=${tx.bank_id}`} className="group flex items-center gap-1.5">
-                            <span
-                              className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md text-[9px] font-bold text-white"
-                              style={{ backgroundColor: cfg?.color ?? "#888" }}
-                            >
-                              {cfg?.initial ?? tx.bank_id.slice(0, 2).toUpperCase()}
-                            </span>
-                            <span className={`max-w-[80px] truncate transition-colors ${isArchived ? "text-gray-400" : "text-gray-600 group-hover:text-indigo-600"}`}>
-                              {cfg?.name ?? tx.bank_id}
-                            </span>
-                          </Link>
-                        </td>
-                        <td className="px-3 py-2">
-                          {tx.tx_type ? (
-                            <span className={`rounded px-1.5 py-0.5 text-xs ${isArchived ? "bg-gray-200 text-gray-500" : "bg-gray-100 text-gray-600"}`}>
-                              {TX_TYPE_LABELS[tx.tx_type] ?? tx.tx_type}
-                            </span>
-                          ) : (
-                            <span className="text-gray-300">-</span>
-                          )}
-                        </td>
-                        <td className={`max-w-[220px] truncate px-3 py-2 ${isArchived ? "text-gray-400" : "text-gray-800"}`} title={tx.description}>
-                          <span>{tx.description}</span>
-                          {isArchived && (
-                            <span className="ml-2 rounded bg-gray-200 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-gray-500">
-                              Archived
-                            </span>
-                          )}
-                        </td>
-                        <td className={`max-w-[160px] truncate px-3 py-2 ${isArchived ? "text-gray-400" : "text-gray-500"}`} title={tx.counterpart ?? ""}>
-                          {tx.counterpart && tx.counterpart !== tx.description ? tx.counterpart : <span className="text-gray-300">-</span>}
-                        </td>
-                        <td className={`px-3 py-2 font-mono text-xs ${isArchived ? "text-gray-400" : "text-gray-500"}`}>
-                          {tx.card_last4 ? (
-                            <span>
-                              **** {tx.card_last4}
-                              {tx.card_network ? <span className="ml-1 font-sans text-gray-400">{tx.card_network}</span> : null}
-                            </span>
-                          ) : (
-                            <span className="text-gray-300">-</span>
-                          )}
-                        </td>
-                        <td className="px-3 py-2">
-                          {tx.category ? (
-                            <span className={`rounded px-1.5 py-0.5 text-xs ${isArchived ? "bg-gray-200 text-gray-500" : "bg-indigo-50 text-indigo-600"}`}>{tx.category}</span>
-                          ) : (
-                            <span className="text-gray-300">-</span>
-                          )}
-                        </td>
-                        <td className="px-3 py-2">
-                          {tx.subcategory ? (
-                            <span className={`rounded px-1.5 py-0.5 text-xs ${isArchived ? "bg-gray-200 text-gray-500" : "bg-indigo-50 text-indigo-500"}`}>{tx.subcategory}</span>
-                          ) : (
-                            <span className="text-gray-300">-</span>
-                          )}
-                        </td>
-                        <td className={`px-3 py-2 text-right font-mono font-medium ${isArchived ? "text-gray-400" : tx.amount < 0 ? "text-red-600" : "text-emerald-600"}`}>
-                          {fmt(tx.amount, tx.currency)}
-                        </td>
-                        <td className="px-2 py-2 text-right">
-                          <ArchiveButton isArchived={isArchived} transactionId={tx.id} />
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-
-            {totalPages > 1 && (
-              <div className="mt-4 flex items-center justify-between">
-                <span className="text-xs text-gray-400">
-                  Page {currentPage} of {totalPages}
-                </span>
-                <div className="flex gap-1">
-                  {currentPage > 1 && (
-                    <Link
-                      href={pageLink(currentPage - 1)}
-                      className="rounded-md border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-600 transition-colors hover:bg-gray-50"
-                    >
-                      Previous
-                    </Link>
-                  )}
-                  {currentPage < totalPages && (
-                    <Link
-                      href={pageLink(currentPage + 1)}
-                      className="rounded-md border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-600 transition-colors hover:bg-gray-50"
-                    >
-                      Next
-                    </Link>
-                  )}
-                </div>
-              </div>
-            )}
+            <TransactionsTable transactions={transactions} showBankColumn isEditMode={isEditMode} taxonomy={taxonomy} hiddenColumns={hiddenColumns} />
+            <PaginationNav bankId={bankId} filters={filters} currentPage={currentPage} totalPages={totalPages} />
           </>
         )}
       </main>
@@ -525,11 +435,7 @@ export default async function Home({ searchParams }: PageProps) {
   const accountUids = isConnected ? getAccountUids(bankId) : [];
   const hasAccounts = accountUids.length > 0;
 
-  const { whereSql, params } = buildSqlFilters(bankId, filters);
-  const transactions = db
-    .prepare(`SELECT * FROM transactions ${whereSql} ORDER BY date DESC`)
-    .all(params) as Transaction[];
-
+  const { totalActive, transactions, totalPages, currentPage } = getPaginatedTransactions(bankId, filters, rawPage);
   const visibleTotals = getVisibleTotals(transactions);
   const archivedShown = countArchived(transactions);
   const activeShown = transactions.length - archivedShown;
@@ -548,6 +454,11 @@ export default async function Home({ searchParams }: PageProps) {
             </span>
           )}
           <h1 className="text-xl font-semibold text-gray-900">{bankLabel}</h1>
+          {isEditMode && (
+            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs text-emerald-700">
+              Edit mode
+            </span>
+          )}
           {isConnected && hasAccounts && (
             <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs text-emerald-600">
               Connected
@@ -590,7 +501,7 @@ export default async function Home({ searchParams }: PageProps) {
       {isConnected && hasAccounts && (
         <TransactionFilters
           {...filterProps}
-          resultLabel={resultLabel(activeShown, archivedShown)}
+          resultLabel={resultLabel(activeShown, archivedShown, totalActive)}
           totalLabel={visibleTotals.length > 0 ? `Visible total: ${visibleTotals.join(" | ")}` : null}
         />
       )}
@@ -620,84 +531,10 @@ export default async function Home({ searchParams }: PageProps) {
       ) : transactions.length === 0 ? (
         <p className="text-sm text-gray-500">No transactions found for the current filters.</p>
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
-          <table className="w-full whitespace-nowrap text-sm">
-            <thead className="border-b border-gray-200 bg-gray-50 text-[11px] uppercase tracking-wide text-gray-500">
-              <tr>
-                <th className="px-3 py-2.5 text-left font-semibold">Date</th>
-                <th className="px-3 py-2.5 text-left font-semibold">Type</th>
-                <th className="px-3 py-2.5 text-left font-semibold">Description</th>
-                <th className="px-3 py-2.5 text-left font-semibold">Counterpart</th>
-                <th className="px-3 py-2.5 text-left font-semibold">Card</th>
-                <th className="px-3 py-2.5 text-left font-semibold">Value date</th>
-                <th className="px-3 py-2.5 text-left font-semibold">Category</th>
-                <th className="px-3 py-2.5 text-left font-semibold">Subcategory</th>
-                <th className="px-3 py-2.5 text-right font-semibold">Amount</th>
-                <th className="w-14 px-2 py-2.5 text-right font-semibold"> </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {transactions.map((tx) => {
-                const isArchived = tx.archived_at !== null;
-                return (
-                <tr key={tx.id} className={`transition-colors ${isArchived ? "bg-gray-50 text-gray-400" : "hover:bg-gray-50"}`}>
-                  <td className={`px-3 py-2 ${isArchived ? "text-gray-400" : "text-gray-500"}`}>{fmtDate(tx.date)}</td>
-                  <td className="px-3 py-2">
-                    {tx.tx_type ? (
-                      <span className={`rounded px-1.5 py-0.5 text-xs ${isArchived ? "bg-gray-200 text-gray-500" : "bg-gray-100 text-gray-600"}`}>
-                        {TX_TYPE_LABELS[tx.tx_type] ?? tx.tx_type}
-                      </span>
-                    ) : (
-                      <span className="text-gray-300">-</span>
-                    )}
-                  </td>
-                  <td className={`max-w-[220px] truncate px-3 py-2 ${isArchived ? "text-gray-400" : "text-gray-800"}`} title={tx.description}>
-                    <span>{tx.description}</span>
-                    {isArchived && (
-                      <span className="ml-2 rounded bg-gray-200 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-gray-500">
-                        Archived
-                      </span>
-                    )}
-                  </td>
-                  <td className={`max-w-[160px] truncate px-3 py-2 ${isArchived ? "text-gray-400" : "text-gray-500"}`} title={tx.counterpart ?? ""}>
-                    {tx.counterpart && tx.counterpart !== tx.description ? tx.counterpart : <span className="text-gray-300">-</span>}
-                  </td>
-                  <td className={`px-3 py-2 font-mono text-xs ${isArchived ? "text-gray-400" : "text-gray-500"}`}>
-                    {tx.card_last4 ? (
-                      <span>
-                        **** {tx.card_last4}
-                        {tx.card_network ? <span className="ml-1 font-sans text-gray-400">{tx.card_network}</span> : null}
-                      </span>
-                    ) : (
-                      <span className="text-gray-300">-</span>
-                    )}
-                  </td>
-                  <td className="px-3 py-2 text-gray-400">{fmtDate(tx.value_date)}</td>
-                  <td className="px-3 py-2">
-                    {tx.category ? (
-                      <span className={`rounded px-1.5 py-0.5 text-xs ${isArchived ? "bg-gray-200 text-gray-500" : "bg-indigo-50 text-indigo-600"}`}>{tx.category}</span>
-                    ) : (
-                      <span className="text-gray-300">-</span>
-                    )}
-                  </td>
-                  <td className="px-3 py-2">
-                    {tx.subcategory ? (
-                      <span className={`rounded px-1.5 py-0.5 text-xs ${isArchived ? "bg-gray-200 text-gray-500" : "bg-indigo-50 text-indigo-500"}`}>{tx.subcategory}</span>
-                    ) : (
-                      <span className="text-gray-300">-</span>
-                    )}
-                  </td>
-                  <td className={`px-3 py-2 text-right font-mono font-medium ${isArchived ? "text-gray-400" : tx.amount < 0 ? "text-red-600" : "text-emerald-600"}`}>
-                    {fmt(tx.amount, tx.currency)}
-                  </td>
-                  <td className="px-2 py-2 text-right">
-                    <ArchiveButton isArchived={isArchived} transactionId={tx.id} />
-                  </td>
-                </tr>
-              )})}
-            </tbody>
-          </table>
-        </div>
+        <>
+          <TransactionsTable transactions={transactions} showBankColumn={false} isEditMode={isEditMode} taxonomy={taxonomy} hiddenColumns={hiddenColumns} />
+          <PaginationNav bankId={bankId} filters={filters} currentPage={currentPage} totalPages={totalPages} />
+        </>
       )}
     </main>
   );

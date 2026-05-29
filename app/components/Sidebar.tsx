@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { startTransition, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import type { BankConfig } from "@/lib/banks.config";
-import { unarchiveAllTransactions } from "@/app/actions";
+import { setTransactionEditMode, unarchiveAllTransactions } from "@/app/actions";
 
 function IconAllBanks() {
   return (
@@ -87,6 +87,15 @@ function IconArchiveRestore() {
   );
 }
 
+function IconPencil() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <path d="M10.75 2.75a1.77 1.77 0 1 1 2.5 2.5L6 12.5l-3.25.75.75-3.25 7.25-7.25Z" stroke="currentColor" strokeWidth="1.25" strokeLinejoin="round" />
+      <path d="m9.5 4 2.5 2.5" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 type BankBalance = { amount: number; currency: string } | null;
 
 function fmtBalance(b: BankBalance) {
@@ -103,12 +112,19 @@ export default function Sidebar({
   connectedBanks,
   bankBalances = {},
   archivedTransactionCount = 0,
+  isTransactionEditMode = false,
 }: {
   connectedBanks: BankConfig[];
   bankBalances?: Record<string, BankBalance>;
   archivedTransactionCount?: number;
+  isTransactionEditMode?: boolean;
 }) {
   const [collapsed, setCollapsed] = useState(false);
+  const [editMode, setEditMode] = useState(isTransactionEditMode);
+
+  useEffect(() => {
+    setEditMode(isTransactionEditMode);
+  }, [isTransactionEditMode]);
 
   const pathname    = usePathname();
   const searchParams = useSearchParams();
@@ -262,6 +278,33 @@ export default function Sidebar({
               <span className="shrink-0"><IconDownload /></span>
               {!collapsed && <span>Export</span>}
             </Link>
+            <button
+              type="button"
+              onClick={() => {
+                const nextValue = !editMode;
+                setEditMode(nextValue);
+                startTransition(async () => {
+                  await setTransactionEditMode(nextValue);
+                });
+              }}
+              className={`flex w-full items-center gap-2.5 px-2 py-2 rounded-md text-sm transition-colors ${
+                editMode
+                  ? "bg-emerald-50 text-emerald-700"
+                  : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+              } ${collapsed ? "justify-center" : ""}`}
+            >
+              <span className="shrink-0"><IconPencil /></span>
+              {!collapsed && (
+                <span className="flex min-w-0 flex-1 items-center justify-between gap-2">
+                  <span className="truncate">Edit mode</span>
+                  <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${
+                    editMode ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-500"
+                  }`}>
+                    {editMode ? "ON" : "OFF"}
+                  </span>
+                </span>
+              )}
+            </button>
             {archivedTransactionCount > 0 && (
               <form action={unarchiveAllTransactions}>
                 <button

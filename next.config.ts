@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   serverExternalPackages: ["better-sqlite3"],
-  allowedDevOrigins: ["clark-iron-chart-circus.trycloudflare.com"],
+  allowedDevOrigins: ["correct-playstation-congress-advancement.trycloudflare.com"],
 };
 
 export default nextConfig;

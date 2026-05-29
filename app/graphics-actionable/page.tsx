@@ -2,6 +2,8 @@ import Link from "next/link";
 import type { CSSProperties } from "react";
 import db from "@/lib/db";
 import { getBankById } from "@/lib/banks.config";
+import { formatCategoryPath } from "@/lib/taxonomy";
+import { DEFAULT_GRAPHICS_PERIOD, GRAPHICS_PERIOD_OPTIONS, getGraphicsPeriod, getSinceIso } from "@/lib/graphics-periods";
 
 type SearchParamsInput = Record<string, string | string[] | undefined>;
 
@@ -16,15 +18,13 @@ type SpendingRow = {
   currency: string;
   description: string;
   counterpart: string | null;
-  category: string | null;
-  subcategory: string | null;
+  category_path: string;
   bank_id: string;
 };
 
 type CategoryDatum = {
   name: string;
-  category: string | null;
-  subcategory: string | null;
+  categoryPath: string;
   amount: number;
   count: number;
   share: number;
@@ -55,20 +55,6 @@ type CurrencyAnalytics = {
   monthlyTrend: MonthDatum[];
 };
 
-type PeriodOption = {
-  value: string;
-  label: string;
-  days: number | null;
-};
-
-const PERIOD_OPTIONS: PeriodOption[] = [
-  { value: "30d", label: "30 days", days: 30 },
-  { value: "90d", label: "90 days", days: 90 },
-  { value: "180d", label: "6 months", days: 180 },
-  { value: "365d", label: "12 months", days: 365 },
-  { value: "all", label: "All time", days: null },
-];
-
 const CATEGORY_COLORS = [
   "#4f46e5",
   "#0f766e",
@@ -80,26 +66,12 @@ const CATEGORY_COLORS = [
   "#ca8a04",
 ];
 
-const INTERNAL_TRANSFER_CATEGORY = "Internal Transfer";
-const ACTIONABLE_CATEGORY_BREAKDOWN = new Set(["Lifestyle", "Subscriptions"]);
 const ACTIONABLE_COUNTERPART_MAX_SPEND = 150;
 const MONTHLY_BUDGET_LIMIT = 1200;
 
 function firstString(value: string | string[] | undefined) {
   if (Array.isArray(value)) return value[0];
   return value;
-}
-
-function getPeriod(periodValue: string | undefined) {
-  return PERIOD_OPTIONS.find((option) => option.value === periodValue) ?? PERIOD_OPTIONS[1];
-}
-
-function getSinceIso(days: number | null) {
-  if (days === null) return null;
-  const date = new Date();
-  date.setHours(0, 0, 0, 0);
-  date.setDate(date.getDate() - (days - 1));
-  return date.toISOString();
 }
 
 function fmtMoney(amount: number, currency: string) {
@@ -124,16 +96,14 @@ function makeCounterpartLabel(row: SpendingRow) {
   return raw.length > 0 ? raw : "Unknown";
 }
 
-function makeActionableCategoryLabel(row: SpendingRow) {
-  const category = row.category?.trim();
-  if (!category) return "Uncategorized";
-
-  const subcategory = row.subcategory?.trim();
-  if (ACTIONABLE_CATEGORY_BREAKDOWN.has(category) && subcategory) {
-    return subcategory;
+function makeActionableCategoryLabel(path: string): string {
+  if (!path || path === "uncategorized") return "Uncategorized";
+  // Break out subscription leaf names directly
+  if (path.startsWith("fixed.subscriptions.")) {
+    const leaf = path.slice("fixed.subscriptions.".length);
+    return leaf.charAt(0).toUpperCase() + leaf.slice(1).replace(/_/g, " ") + " subscriptions";
   }
-
-  return subcategory ? `${category} / ${subcategory}` : category;
+  return formatCategoryPath(path);
 }
 
 function buildCurrencyAnalytics(rows: SpendingRow[]): CurrencyAnalytics[] {
@@ -147,11 +117,7 @@ function buildCurrencyAnalytics(rows: SpendingRow[]): CurrencyAnalytics[] {
 
   return [...rowsByCurrency.entries()]
     .map(([currency, currencyRows]) => {
-      const spendRows = currencyRows.filter(
-        (row) => row.amount < 0 && row.category !== INTERNAL_TRANSFER_CATEGORY
-      );
       const categoryTotals = new Map<string, { amount: number; count: number }>();
-      const categoryKeys = new Map<string, { category: string | null; subcategory: string | null }>();
       const counterpartTotals = new Map<string, { amount: number; count: number }>();
       const monthTotals = new Map<string, number>();
 
@@ -159,26 +125,24 @@ function buildCurrencyAnalytics(rows: SpendingRow[]): CurrencyAnalytics[] {
       let uncategorizedAmount = 0;
       let uncategorizedCount = 0;
 
-      for (const row of spendRows) {
+      for (const row of currencyRows) {
         const spend = Math.abs(row.amount);
         totalSpend += spend;
 
-        const categoryLabel = makeActionableCategoryLabel(row);
-        const categoryEntry = categoryTotals.get(categoryLabel) ?? { amount: 0, count: 0 };
+        const path = row.category_path || "uncategorized";
+        const label = makeActionableCategoryLabel(path);
+        const categoryEntry = categoryTotals.get(label) ?? { amount: 0, count: 0 };
         categoryEntry.amount += spend;
         categoryEntry.count += 1;
-        categoryTotals.set(categoryLabel, categoryEntry);
-        categoryKeys.set(categoryLabel, {
-          category: row.category?.trim() || null,
-          subcategory: row.subcategory?.trim() || null,
-        });
+        categoryTotals.set(label, categoryEntry);
 
-        if (categoryLabel === "Uncategorized") {
+        if (path === "uncategorized") {
           uncategorizedAmount += spend;
           uncategorizedCount += 1;
         }
 
-        if (row.category !== "Travel" && spend <= ACTIONABLE_COUNTERPART_MAX_SPEND) {
+        // Exclude travel from counterpart analysis
+        if (path !== "irregular.travel" && spend <= ACTIONABLE_COUNTERPART_MAX_SPEND) {
           const counterpartLabel = makeCounterpartLabel(row);
           const counterpartEntry = counterpartTotals.get(counterpartLabel) ?? { amount: 0, count: 0 };
           counterpartEntry.amount += spend;
@@ -193,18 +157,14 @@ function buildCurrencyAnalytics(rows: SpendingRow[]): CurrencyAnalytics[] {
       const topCategories = [...categoryTotals.entries()]
         .sort((a, b) => b[1].amount - a[1].amount)
         .slice(0, 8)
-        .map(([name, data], index) => {
-          const keys = categoryKeys.get(name) ?? { category: null, subcategory: null };
-          return {
-            name,
-            category: keys.category,
-            subcategory: keys.subcategory,
-            amount: data.amount,
-            count: data.count,
-            share: totalSpend > 0 ? data.amount / totalSpend : 0,
-            color: CATEGORY_COLORS[index % CATEGORY_COLORS.length],
-          };
-        });
+        .map(([label, data], index) => ({
+          name: label,
+          categoryPath: label,
+          amount: data.amount,
+          count: data.count,
+          share: totalSpend > 0 ? data.amount / totalSpend : 0,
+          color: CATEGORY_COLORS[index % CATEGORY_COLORS.length],
+        }));
 
       const topCounterparts = [...counterpartTotals.entries()]
         .filter(([, data]) => data.count > 1)
@@ -231,8 +191,8 @@ function buildCurrencyAnalytics(rows: SpendingRow[]): CurrencyAnalytics[] {
       return {
         currency,
         totalSpend,
-        transactionCount: spendRows.length,
-        averageSpend: spendRows.length > 0 ? totalSpend / spendRows.length : 0,
+        transactionCount: currencyRows.length,
+        averageSpend: currencyRows.length > 0 ? totalSpend / currencyRows.length : 0,
         uncategorizedAmount,
         uncategorizedCount,
         topCategories,
@@ -268,25 +228,25 @@ function buildDonutStyle(categories: CategoryDatum[]) {
 }
 
 function buildGraphicsHref(bankId: string, period: string) {
-  if (bankId === "all" && period === "90d") return "/graphics";
+  if (bankId === "all" && period === DEFAULT_GRAPHICS_PERIOD) return "/graphics";
   const params = new URLSearchParams();
   if (bankId !== "all") params.set("bank", bankId);
-  if (period !== "90d") params.set("period", period);
+  if (period !== DEFAULT_GRAPHICS_PERIOD) params.set("period", period);
   return `/graphics?${params.toString()}`;
 }
 
 function buildActionableHref(bankId: string, period: string) {
-  if (bankId === "all" && period === "90d") return "/graphics-actionable";
+  if (bankId === "all" && period === DEFAULT_GRAPHICS_PERIOD) return "/graphics-actionable";
   const params = new URLSearchParams();
   if (bankId !== "all") params.set("bank", bankId);
-  if (period !== "90d") params.set("period", period);
+  if (period !== DEFAULT_GRAPHICS_PERIOD) params.set("period", period);
   return `/graphics-actionable?${params.toString()}`;
 }
 
 export default async function GraphicsActionablePage({ searchParams }: PageProps) {
   const rawParams = await searchParams;
   const bankId = firstString(rawParams.bank) ?? "all";
-  const period = getPeriod(firstString(rawParams.period));
+  const period = getGraphicsPeriod(firstString(rawParams.period));
   const sinceIso = getSinceIso(period.days);
 
   const bankRows = db
@@ -301,12 +261,11 @@ export default async function GraphicsActionablePage({ searchParams }: PageProps
   }));
 
   const clauses = [
-    "amount < 0",
-    "(category IS NULL OR category != @internalTransferCategory)",
+    "cashflow_type = 'expense'",
+    "is_excluded_from_spending = 0",
     "archived_at IS NULL",
   ];
   const params: Record<string, string> = {};
-  params.internalTransferCategory = INTERNAL_TRANSFER_CATEGORY;
 
   if (bankId !== "all") {
     clauses.push("bank_id = @bankId");
@@ -320,7 +279,7 @@ export default async function GraphicsActionablePage({ searchParams }: PageProps
 
   const rows = db
     .prepare(
-      `SELECT id, date, amount, currency, description, counterpart, category, subcategory, bank_id
+      `SELECT id, date, amount, currency, description, counterpart, category_path, bank_id
        FROM transactions
        WHERE ${clauses.join(" AND ")}
        ORDER BY date DESC`
@@ -403,7 +362,7 @@ export default async function GraphicsActionablePage({ searchParams }: PageProps
               Period
             </p>
             <div className="flex flex-wrap gap-2">
-              {PERIOD_OPTIONS.map((option) => (
+              {GRAPHICS_PERIOD_OPTIONS.map((option) => (
                 <Link
                   key={option.value}
                   href={buildActionableHref(bankId, option.value)}
@@ -511,7 +470,7 @@ export default async function GraphicsActionablePage({ searchParams }: PageProps
                           Spending by category
                         </p>
                         <p className="mt-1 text-sm text-gray-500">
-                          Lifestyle and Subscriptions are broken down directly by subcategory.
+                          Subscriptions are broken down directly by sub-path.
                         </p>
                       </div>
                       <div className="relative h-24 w-24 shrink-0">
@@ -525,18 +484,10 @@ export default async function GraphicsActionablePage({ searchParams }: PageProps
 
                     <div className="space-y-3">
                       {currencyData.topCategories.map((category) => {
-                        const categoryParams = new URLSearchParams({
-                          bank: selectedBank?.id ?? "all",
-                        });
-                        if (category.category) categoryParams.set("category", category.category);
-                        if (category.subcategory) categoryParams.set("subcategory", category.subcategory);
-                        const categoryHref = `/?${categoryParams.toString()}`;
-
                         return (
-                          <Link
+                          <div
                             key={category.name}
-                            href={categoryHref}
-                            className="block rounded-xl border border-transparent p-2 transition-colors hover:border-gray-200 hover:bg-gray-50"
+                            className="block rounded-xl border border-transparent p-2"
                           >
                             <div className="mb-2 flex items-center justify-between gap-3 text-sm">
                               <div className="flex min-w-0 items-center gap-2">
@@ -564,7 +515,7 @@ export default async function GraphicsActionablePage({ searchParams }: PageProps
                                 }}
                               />
                             </div>
-                          </Link>
+                          </div>
                         );
                       })}
                     </div>

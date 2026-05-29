@@ -2,118 +2,112 @@
 
 import { useState } from "react";
 
-const PROMPT = `# Prompt de maintenance — bank-me
+const PROMPT = `# Maintenance prompt - bank-me
 
-Tu es un assistant expert en développement web. L'utilisateur a un projet appelé **bank-me** — une application web personnelle de suivi des transactions bancaires. Tu vas l'aider à remettre à jour les connexions bancaires et à rafraîchir les données. Lis d'abord les fichiers AGENTS.md, tree.md et MAGNUM.md à la racine du projet. Voici tout ce que tu dois savoir pour démarrer.
+You are an expert web development assistant. The user has a project called **bank-me** - a personal web app for tracking bank transactions. Help them refresh bank connections and update the data. Read AGENTS.md, tree.md, and MAGNUM.md at the project root first. Here is the operating context you need.
 
-## Ce qu'est bank-me
+## What bank-me is
 
-bank-me est une application Next.js 16 qui se connecte aux banques via le protocole PSD2 grâce à un service tiers appelé **Enable Banking** (enablebanking.com). Elle stocke les transactions dans une base SQLite locale (data.db) et permet de visualiser et catégoriser les dépenses.
+bank-me is a Next.js 16 app connected to banks through PSD2 via **Enable Banking** (enablebanking.com). It stores transactions in a local SQLite database (data.db) and lets the user review and categorize spending.
 
-Stack technique :
-- Framework : Next.js 16 App Router (TypeScript)
-- Base de données : SQLite via better-sqlite3 (fichier data.db à la racine)
-- Auth bancaire : OAuth 2.0 via Enable Banking (JWT RS256)
-- Style : Tailwind CSS v4
+Technical stack:
+- Framework: Next.js 16 App Router (TypeScript)
+- Database: SQLite via better-sqlite3 (data.db at the repo root)
+- Bank auth: OAuth 2.0 via Enable Banking (RS256 JWT)
+- Styling: Tailwind CSS v4
 
-Fichiers clés :
-- lib/banks.config.ts — liste toutes les banques supportées
-- lib/providers/enablebanking.ts — toute la logique d'appel à l'API Enable Banking
-- lib/db.ts — schéma SQLite et migrations
-- app/actions.ts — Server Actions (syncTransactions, etc.)
-- app/api/connect/route.ts — démarre le flux OAuth
-- app/callback/route.ts — reçoit le callback OAuth
-- .env.local — clés secrètes (ne jamais committer)
-- data.db — base de données locale (ne jamais committer)
+Key files:
+- lib/banks.config.ts - supported bank registry
+- lib/providers/enablebanking.ts - Enable Banking API integration
+- lib/db.ts - SQLite schema and migrations
+- app/actions.ts - Server Actions (syncTransactions, etc.)
+- app/api/connect/route.ts - starts the OAuth flow
+- app/callback/route.ts - receives the OAuth callback
+- .env.local - secrets (never commit)
+- data.db - local database (never commit)
 
-## Comment fonctionnent les connexions bancaires
+## How bank connections work
 
-1. L'app utilise Enable Banking comme intermédiaire PSD2.
-2. Chaque connexion bancaire passe par un flux OAuth : l'utilisateur est redirigé vers sa banque pour donner son consentement, puis redirigé back vers l'app.
-3. Enable Banking exige une URL de callback HTTPS — localhost HTTP ne fonctionne PAS pour ce flux. Il faut un tunnel HTTPS (ex : Cloudflare Tunnel).
-4. Une fois connectée, la session dure environ 90 jours (voir la date d'expiration dans Paramètres).
-5. Les transactions sont synchronisées manuellement depuis la barre latérale ("Synchroniser").
+1. The app uses Enable Banking as the PSD2 intermediary.
+2. Every bank connection goes through OAuth: the user is redirected to the bank for consent, then back to the app.
+3. Enable Banking requires an HTTPS callback URL. Plain localhost HTTP does not work for OAuth, so use an HTTPS tunnel such as Cloudflare Tunnel.
+4. Once connected, a session lasts about 90 days.
+5. Transactions are synchronized manually from the sidebar.
 
-En base de données, la connexion est stockée dans la table provider_tokens :
-- provider = enablebanking_<bankId> (ex: enablebanking_revolut)
-- session_id = l'ID de session Enable Banking
-- account_uids = JSON array des UIDs de comptes bancaires
-- state IS NULL = OAuth terminé avec succès
-- expires_at = date d'expiration de la session
+Database storage for a connection lives in provider_tokens:
+- provider = enablebanking_<bankId> (example: enablebanking_revolut)
+- session_id = Enable Banking session id
+- account_uids = JSON array of account UIDs
+- state IS NULL = OAuth completed successfully
+- expires_at = session expiration date
 
-## Quand doit-on reconnecter ?
+## When to reconnect
 
-- Quand la session expire (env. 90 jours après la connexion initiale)
-- Quand Paramètres affiche "Session expirée" ou "Aucun compte"
-- Quand la synchronisation échoue avec erreur 401/403
+- When the session expires (about 90 days after the initial connection)
+- When Settings shows "Session expired" or "No accounts"
+- When synchronization fails with a 401 or 403 error
 
-## Procédure pas à pas pour reconnecter une banque
+## Reconnection procedure
 
-### Étape 1 — Préparer le tunnel HTTPS
+### Step 1 - Start the HTTPS tunnel
 
-L'app tourne en local. Pour l'OAuth, il faut exposer le port 3000 via HTTPS.
-Ouvre un terminal et lance :
+The app runs locally. OAuth needs port 3000 exposed through HTTPS.
+Run:
 
   cloudflared tunnel --url http://localhost:3000
 
-Cloudflare affiche une URL comme https://xxx-yyy-zzz.trycloudflare.com. Note cette URL.
+Cloudflare will print a URL such as https://xxx-yyy-zzz.trycloudflare.com. Keep it.
 
-### Étape 2 — Mettre à jour .env.local
+### Step 2 - Update .env.local
 
-Dans .env.local, remplace la valeur de NEXT_PUBLIC_APP_URL par l'URL du tunnel :
+Set:
 
   NEXT_PUBLIC_APP_URL=https://xxx-yyy-zzz.trycloudflare.com
 
-### Étape 3 — Redémarrer le serveur Next.js
+### Step 3 - Restart Next.js
 
-Arrête le serveur (Ctrl+C) et relance :
+Stop the dev server and run:
 
   npm run dev
 
-Le serveur doit être redémarré pour prendre en compte le changement d'URL.
+### Step 4 - Reconnect the bank
 
-### Étape 4 — Reconnecter la banque
+1. Open http://localhost:3000/settings
+2. Find the bank
+3. Click "Reconnect"
+4. Complete the bank consent flow
+5. Return to the app
+6. Confirm the session is active
 
-1. Aller sur http://localhost:3000/settings
-2. Trouver la banque à reconnecter
-3. Cliquer "Reconnecter"
-4. Tu seras redirigé vers la banque pour re-donner le consentement
-5. Après validation, tu reviens automatiquement sur l'app
-6. La session est maintenant active (statut vert "Connectée")
+### Step 5 - Sync transactions
 
-### Étape 5 — Synchroniser les transactions
+1. Open the bank in the sidebar
+2. Click "Synchronize"
+3. Confirm new transactions are written to the database
 
-1. Dans la barre latérale, cliquer sur la banque reconnectée
-2. Cliquer "Synchroniser"
-3. Les nouvelles transactions sont ajoutées à la base
+### Step 6 - Switch back to localhost if desired
 
-### Étape 6 — Remettre .env.local en localhost (optionnel)
-
-Une fois toutes les banques reconnectées, tu peux remettre :
+After all reconnects are done, you can restore:
 
   NEXT_PUBLIC_APP_URL=http://localhost:3000
 
-et redémarrer le serveur. Le tunnel n'est plus nécessaire jusqu'à la prochaine reconnexion.
+Then restart the dev server. The tunnel is not needed again until the next reconnection.
 
-## Résolution de problèmes courants
+## Common troubleshooting
 
-Erreur 401/403 pendant la sync → session expirée, reconnecter la banque.
+- 401/403 during sync -> session expired, reconnect the bank
+- "No accounts" after reconnect -> known ING NL issue or incomplete consent selection
+- Callback never returns -> verify NEXT_PUBLIC_APP_URL matches the tunnel URL and the dev server was restarted
+- Tunnel dropped mid-flow -> restart cloudflared, update .env.local, restart Next.js
+- Session is valid but sync still fails -> confirm data.db exists and inspect the Next.js terminal logs
 
-"Aucun compte" après reconnexion → bug connu d'ING NL (le portail Enable Banking doit avoir les comptes configurés). Pour les autres banques, déconnecter + reconnecter.
+## Enable Banking credentials reminder
 
-Callback ne revient pas → vérifier que NEXT_PUBLIC_APP_URL correspond bien à l'URL du tunnel et que le serveur a bien été redémarré après la modification.
+.env.local contains:
+- ENABLE_BANKING_APP_ID - application UUID
+- ENABLE_BANKING_PRIVATE_KEY - RS256 private key in PEM form with escaped \\n line breaks
 
-Tunnel déconnecté en cours de route → relancer cloudflared, noter la nouvelle URL, mettre à jour .env.local, redémarrer le serveur.
-
-La session est OK mais les transactions ne se synchronisent pas → vérifier que data.db est présent et consulter les logs du terminal Next.js.
-
-## Rappel credentials Enable Banking
-
-Les credentials sont dans .env.local :
-- ENABLE_BANKING_APP_ID — UUID de l'application
-- ENABLE_BANKING_PRIVATE_KEY — clé privée RS256 (format PEM, les sauts de ligne sont échappés avec \\n)
-
-Ces clés se trouvent sur le portail Enable Banking : enablebanking.com → ton application.
+These credentials come from the Enable Banking portal.
 `;
 
 export default function MaintenancePromptBox() {
@@ -125,7 +119,6 @@ export default function MaintenancePromptBox() {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      // fallback: select textarea
       const el = document.getElementById("maintenance-prompt") as HTMLTextAreaElement | null;
       el?.select();
     }
@@ -135,9 +128,9 @@ export default function MaintenancePromptBox() {
     <div className="overflow-hidden rounded-[24px] border border-white/70 bg-white/90 shadow-[0_20px_60px_-30px_rgba(15,23,42,0.35)] backdrop-blur">
       <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
         <div>
-          <p className="text-sm font-semibold text-slate-800">Prompt de maintenance</p>
+          <p className="text-sm font-semibold text-slate-800">Maintenance prompt</p>
           <p className="mt-0.5 text-xs text-slate-400">
-            Dans 3 mois, copie-colle ce prompt dans un LLM avec accès au dossier du projet — il te guidera pas à pas.
+            Paste this into an LLM with access to the project folder for a guided refresh later.
           </p>
         </div>
         <button
@@ -153,7 +146,7 @@ export default function MaintenancePromptBox() {
               <svg className="h-3.5 w-3.5" viewBox="0 0 16 16" fill="currentColor">
                 <path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.75.75 0 0 1 1.06-1.06L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z" />
               </svg>
-              Copié !
+              Copied
             </>
           ) : (
             <>
@@ -161,7 +154,7 @@ export default function MaintenancePromptBox() {
                 <path d="M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z" />
                 <path d="M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z" />
               </svg>
-              Copier
+              Copy
             </>
           )}
         </button>

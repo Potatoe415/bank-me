@@ -13,7 +13,7 @@ type FilterValues = {
   from: string;
   to: string;
   category: string;
-  subcategory: string;
+  reviewStatus: string;
   query: string;
   amount: string;
 };
@@ -22,7 +22,6 @@ type TransactionFiltersProps = {
   bankId: string;
   initialValues: FilterValues;
   categoryOptions: FilterOption[];
-  subcategoryOptions: FilterOption[];
   resetHref: string;
   hasActiveFilters: boolean;
   resultLabel: string;
@@ -36,7 +35,7 @@ function buildHref(bankId: string, values: FilterValues, pathname: string) {
   if (values.from) params.set("from", values.from);
   if (values.to) params.set("to", values.to);
   if (values.category) params.set("category", values.category);
-  if (values.subcategory) params.set("subcategory", values.subcategory);
+  if (values.reviewStatus) params.set("review_status", values.reviewStatus);
   if (values.query.trim()) params.set("query", values.query.trim());
   if (values.amount.trim()) params.set("amount", values.amount.trim());
 
@@ -47,7 +46,6 @@ export default function TransactionFilters({
   bankId,
   initialValues,
   categoryOptions,
-  subcategoryOptions,
   resetHref,
   hasActiveFilters,
   resultLabel,
@@ -61,18 +59,11 @@ export default function TransactionFilters({
   const [from, setFrom] = useState(initialValues.from);
   const [to, setTo] = useState(initialValues.to);
   const [category, setCategory] = useState(initialValues.category);
-  const [subcategory, setSubcategory] = useState(initialValues.subcategory);
+  const [reviewStatus, setReviewStatus] = useState(initialValues.reviewStatus);
   const [query, setQuery] = useState(initialValues.query);
   const [amount, setAmount] = useState(initialValues.amount);
 
-  const currentValues: FilterValues = {
-    from,
-    to,
-    category,
-    subcategory,
-    query,
-    amount,
-  };
+  const currentValues: FilterValues = { from, to, category, reviewStatus, query, amount };
 
   function applyFilters() {
     const href = buildHref(bankId, currentValues, pathname);
@@ -84,14 +75,12 @@ export default function TransactionFilters({
 
   useEffect(() => {
     const nextValues = JSON.stringify(initialValues);
-    if (nextValues === lastAppliedValuesRef.current) {
-      return;
-    }
+    if (nextValues === lastAppliedValuesRef.current) return;
 
     setFrom(initialValues.from);
     setTo(initialValues.to);
     setCategory(initialValues.category);
-    setSubcategory(initialValues.subcategory);
+    setReviewStatus(initialValues.reviewStatus);
     setQuery(initialValues.query);
     setAmount(initialValues.amount);
     lastAppliedValuesRef.current = nextValues;
@@ -108,7 +97,7 @@ export default function TransactionFilters({
     }, 250);
 
     return () => window.clearTimeout(timeoutId);
-  }, [from, to, category, subcategory, query, amount]);
+  }, [from, to, category, reviewStatus, query, amount]);
 
   return (
     <form
@@ -138,14 +127,11 @@ export default function TransactionFilters({
         />
       </div>
 
-      <div className="flex min-w-[180px] flex-col gap-1">
+      <div className="flex min-w-[220px] flex-col gap-1">
         <label className="text-xs font-medium text-gray-500">Category</label>
         <select
           value={category}
-          onChange={(event) => {
-            setCategory(event.target.value);
-            setSubcategory("");
-          }}
+          onChange={(event) => setCategory(event.target.value)}
           className="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-400"
         >
           <option value="">All categories</option>
@@ -157,19 +143,17 @@ export default function TransactionFilters({
         </select>
       </div>
 
-      <div className="flex min-w-[180px] flex-col gap-1">
-        <label className="text-xs font-medium text-gray-500">Subcategory</label>
+      <div className="flex flex-col gap-1">
+        <label className="text-xs font-medium text-gray-500">Review status</label>
         <select
-          value={subcategory}
-          onChange={(event) => setSubcategory(event.target.value)}
+          value={reviewStatus}
+          onChange={(event) => setReviewStatus(event.target.value)}
           className="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-400"
         >
-          <option value="">All subcategories</option>
-          {subcategoryOptions.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
+          <option value="">All statuses</option>
+          <option value="needs_review">Needs review</option>
+          <option value="confirmed">Confirmed</option>
+          <option value="ignored">Ignored</option>
         </select>
       </div>
 

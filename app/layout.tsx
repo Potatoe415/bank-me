@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { cookies } from "next/headers";
 import { Suspense } from "react";
 import Sidebar from "./components/Sidebar";
 import db from "@/lib/db";
 import { getBankById, type BankConfig } from "@/lib/banks.config";
+import { isTransactionEditModeEnabled, TRANSACTION_EDIT_MODE_COOKIE } from "@/lib/transaction-edit-mode";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -83,14 +85,16 @@ function getArchivedTransactionCount(): number {
   return row.count;
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const cookieStore = await cookies();
   const connectedBanks = getConnectedBanks();
   const bankBalances   = getBankBalances();
   const archivedTransactionCount = getArchivedTransactionCount();
+  const isTransactionEditMode = isTransactionEditModeEnabled(cookieStore.get(TRANSACTION_EDIT_MODE_COOKIE)?.value);
 
   return (
     <html
@@ -103,6 +107,7 @@ export default function RootLayout({
             connectedBanks={connectedBanks}
             bankBalances={bankBalances}
             archivedTransactionCount={archivedTransactionCount}
+            isTransactionEditMode={isTransactionEditMode}
           />
         </Suspense>
         <div className="flex-1 min-w-0">

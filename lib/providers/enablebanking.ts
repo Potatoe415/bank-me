@@ -231,8 +231,9 @@ export class EnableBankingProvider implements IProvider {
           transactions: Array<{
             transaction_id?: string;
             entry_reference?: string;
-            booking_date: string;
-            value_date?: string;
+            booking_date: string | null;
+            value_date?: string | null;
+            transaction_date?: string | null;
             transaction_amount: { amount: string; currency: string };
             credit_debit_indicator?: string;
             status?: string;
@@ -249,8 +250,9 @@ export class EnableBankingProvider implements IProvider {
           // Only store finalized/booked transactions; pending card authorizations settle later.
           if (tx.status && tx.status !== "BOOK") continue;
 
-          // Skip transactions without a booking date — they'd corrupt the sync cursor
-          if (!tx.booking_date) continue;
+          // Use transaction_date as fallback when booking_date is null (e.g. PayPal)
+          const effectiveDate = tx.booking_date ?? tx.transaction_date;
+          if (!effectiveDate) continue;
 
           const id =
             tx.transaction_id ??
@@ -274,7 +276,7 @@ export class EnableBankingProvider implements IProvider {
 
           all.push({
             id,
-            date: `${tx.booking_date}T00:00:00.000Z`,
+            date: `${effectiveDate}T00:00:00.000Z`,
             value_date: tx.value_date ? `${tx.value_date}T00:00:00.000Z` : null,
             amount,
             currency: tx.transaction_amount.currency,
@@ -284,8 +286,18 @@ export class EnableBankingProvider implements IProvider {
             card_last4: cardInfo?.identification ?? null,
             card_network: cardInfo?.issuer ?? null,
             bank_id: bankId,
-            category: null,
-            subcategory: null,
+            category_path: 'uncategorized',
+            cashflow_type: 'expense',
+            behavior_bucket: 'variable',
+            is_subscription: 0,
+            is_excluded_from_spending: 0,
+            reimbursement_of_transaction_id: null,
+            review_status: 'needs_review',
+            categorization_source: 'ingestion_raw',
+            confidence_level: 'low',
+            applied_rule_id: null,
+            applied_rule_detail: null,
+            category_is_manual: 0,
             archived_at: null,
             source: 'api_enablebanking',
             is_deleted: 0,

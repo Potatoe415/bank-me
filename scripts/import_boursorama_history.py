@@ -24,11 +24,13 @@ BOURSORAMA_DIR = os.path.join(PROJECT_ROOT, "historical_data", "boursorama")
 INSERT_SQL = """
 INSERT OR IGNORE INTO transactions (
     id, date, value_date, amount, currency, description, counterpart,
-    tx_type, card_last4, card_network, bank_id, category, subcategory,
+    tx_type, card_last4, card_network, bank_id, category_path, review_status,
+    categorization_source, confidence_level, applied_rule_id,
     archived_at, source, is_deleted, counterparty_iban, resulting_balance
 ) VALUES (
     :id, :date, NULL, :amount, :currency, :description, NULL,
-    :tx_type, NULL, NULL, :bank_id, NULL, NULL,
+    :tx_type, NULL, NULL, :bank_id, 'uncategorized', 'needs_review',
+    'ingestion_raw', 'low', 'bulk_import_raw',
     NULL, :source, :is_deleted, NULL, :resulting_balance
 )
 """

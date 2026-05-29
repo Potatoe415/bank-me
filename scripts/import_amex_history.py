@@ -28,11 +28,13 @@ AMEX_DIR = os.path.join(PROJECT_ROOT, "historical_data", "amex")
 INSERT_SQL = """
 INSERT OR IGNORE INTO transactions (
     id, date, value_date, amount, currency, description, counterpart,
-    tx_type, card_last4, card_network, bank_id, category, subcategory,
+    tx_type, card_last4, card_network, bank_id, category_path, review_status,
+    categorization_source, confidence_level, applied_rule_id, applied_rule_detail,
     archived_at, source, is_deleted, counterparty_iban, resulting_balance
 ) VALUES (
     :id, :date, NULL, :amount, :currency, :description, NULL,
-    :tx_type, NULL, NULL, :bank_id, NULL, NULL,
+    :tx_type, NULL, NULL, :bank_id, :category_path, :review_status,
+    :categorization_source, :confidence_level, :applied_rule_id, :applied_rule_detail,
     NULL, :source, :is_deleted, NULL, NULL
 )
 """
@@ -72,14 +74,22 @@ def process_file(conn: sqlite3.Connection, filepath: str) -> tuple[int, int]:
         for row_index, row in enumerate(reader):
             description = row["Description"].strip()
 
+            tx_type = deduce_tx_type(description)
+            is_repayment = tx_type == "CREDIT_CARD_REPAYMENT"
             params = {
                 "id": make_id(filename, row_index, row),
                 "date": f"{parse_date(row['Date'])}T00:00:00.000Z",
                 "amount": parse_amount(row["Montant"]),
                 "currency": "EUR",
                 "description": description,
-                "tx_type": deduce_tx_type(description),
+                "tx_type": tx_type,
                 "bank_id": "americanex",
+                "category_path": "transfers.credit_card" if is_repayment else "uncategorized",
+                "review_status": "confirmed" if is_repayment else "needs_review",
+                "categorization_source": "hardcoded_rule" if is_repayment else "ingestion_raw",
+                "confidence_level": "high" if is_repayment else "low",
+                "applied_rule_id": "amex_repayment_rule" if is_repayment else "bulk_import_raw",
+                "applied_rule_detail": "Exclusion automatisée du remboursement de carte" if is_repayment else None,
                 "source": "csv_amex_historical",
                 "is_deleted": 0,
             }

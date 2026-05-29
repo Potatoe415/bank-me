@@ -1,4 +1,5 @@
 import db from "@/lib/db";
+import { deriveCategoryMetadata } from "@/lib/taxonomy";
 
 type ImportResult = {
   updated: number;
@@ -75,14 +76,20 @@ function normalizeNullable(value: string | undefined): string | null {
 const applyCategoryUpdate = db.prepare(`
   UPDATE transactions
   SET
-    category = COALESCE(@category, category),
-    subcategory = COALESCE(@subcategory, subcategory)
+    category_path = COALESCE(@category_path, category_path),
+    cashflow_type = COALESCE(@cashflow_type, cashflow_type),
+    behavior_bucket = COALESCE(@behavior_bucket, behavior_bucket),
+    is_subscription = COALESCE(@is_subscription, is_subscription),
+    is_excluded_from_spending = COALESCE(@is_excluded_from_spending, is_excluded_from_spending),
+    review_status = CASE WHEN @category_path IS NOT NULL THEN 'needs_review' ELSE review_status END,
+    categorization_source = CASE WHEN @category_path IS NOT NULL THEN 'llm' ELSE categorization_source END,
+    confidence_level = CASE WHEN @category_path IS NOT NULL THEN 'medium' ELSE confidence_level END,
+    applied_rule_id = CASE WHEN @category_path IS NOT NULL THEN 'csv_llm_import' ELSE applied_rule_id END,
+    applied_rule_detail = CASE WHEN @category_path IS NOT NULL THEN NULL ELSE applied_rule_detail END
   WHERE id = @id
-    AND (
-      (@category IS NOT NULL AND COALESCE(category, '') <> @category)
-      OR
-      (@subcategory IS NOT NULL AND COALESCE(subcategory, '') <> @subcategory)
-    )
+    AND COALESCE(category_is_manual, 0) = 0
+    AND @category_path IS NOT NULL
+    AND category_path <> @category_path
 `);
 
 const importCategoriesInTransaction = db.transaction((rows: string[][]): ImportResult => {
@@ -92,15 +99,10 @@ const importCategoriesInTransaction = db.transaction((rows: string[][]): ImportR
   );
 
   const idIndex = headerMap.get("id");
-  const categoryIndex = headerMap.get("category");
-  const subcategoryIndex = headerMap.get("subcategory");
+  const pathIndex = headerMap.get("category_path");
 
-  if (
-    idIndex === undefined ||
-    categoryIndex === undefined ||
-    subcategoryIndex === undefined
-  ) {
-    throw new Error("CSV must contain id, category, and subcategory columns.");
+  if (idIndex === undefined || pathIndex === undefined) {
+    throw new Error("CSV must contain id and category_path columns.");
   }
 
   let updated = 0;
@@ -108,15 +110,22 @@ const importCategoriesInTransaction = db.transaction((rows: string[][]): ImportR
 
   for (const row of dataRows) {
     const id = normalizeNullable(row[idIndex]);
-    const category = normalizeNullable(row[categoryIndex]);
-    const subcategory = normalizeNullable(row[subcategoryIndex]);
+    const categoryPath = normalizeNullable(row[pathIndex]);
 
-    if (!id || (!category && !subcategory)) {
+    if (!id || !categoryPath) {
       skipped += 1;
       continue;
     }
 
-    const result = applyCategoryUpdate.run({ id, category, subcategory });
+    const meta = deriveCategoryMetadata(categoryPath);
+    const result = applyCategoryUpdate.run({
+      id,
+      category_path: categoryPath,
+      cashflow_type: meta.cashflow_type,
+      behavior_bucket: meta.behavior_bucket,
+      is_subscription: meta.is_subscription,
+      is_excluded_from_spending: meta.is_excluded_from_spending,
+    });
     if (result.changes > 0) {
       updated += 1;
     } else {
