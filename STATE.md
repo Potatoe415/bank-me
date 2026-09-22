@@ -7,7 +7,7 @@ History lives in `docs/DECISIONS.md` (decisions) and `docs/BACKLOG.md` (tasks).
 
 Status: Active — Ready.
 Current_Goal: Codebase maintenance & bank connections.
-Last_Action: Committed and pushed recent updates to origin/main.
+Last_Action: Created start-local.js + run-local.bat (port 3004, no Cloudflare tunnel).
 Next_Actions:
 - Connect bank accounts or resume feature development.
 
@@ -21,6 +21,7 @@ Important_Files:
 - `docs/BACKLOG.md` — current tasks
 
 Recent_Changes:
+- 2026-09-22 Created start-local.js + run-local.bat (port 3004, no Cloudflare tunnel).
 - 2026-09-22 Committed and pushed updates (graphics-name, category-stats, rule-propagation, PayPal US, cleanup).
 - 2026-09-22 Project cleanup: removed ~380 obsolete categorization batch CSVs, scratch scripts, and logs.
 - 2026-09-22 Added PayPal US to lib/banks.config.ts.

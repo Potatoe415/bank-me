@@ -7,7 +7,7 @@ console.log("   Démarrage automatisé de Bank-Me (Tunnel + App)  ");
 console.log("===================================================\n");
 
 console.log("[1/3] Lancement du tunnel Cloudflare...");
-const cloudflared = spawn('cloudflared', ['tunnel', '--url', 'http://localhost:3000']);
+const cloudflared = spawn('cloudflared', ['tunnel', '--url', 'http://localhost:3004']);
 
 let tunnelUrl = '';
 let nextServer = null;
@@ -38,11 +38,11 @@ cloudflared.stderr.on('data', (data) => {
 
     // Démarrer Next.js
     console.log("\n[3/3] Lancement du serveur de développement Next.js...");
-    nextServer = spawn('npm', ['run', 'dev'], { shell: true, stdio: 'inherit' });
+    nextServer = spawn('npm', ['run', 'dev'], { shell: true, stdio: 'inherit', env: { ...process.env, PORT: '3004' } });
     
     console.log("\n===================================================");
     console.log(` L'application est prête !`);
-    console.log(` URL locale : http://localhost:3000`);
+    console.log(` URL locale : http://localhost:3004`);
     console.log(` URL publique (OAuth) : ${tunnelUrl}`);
     console.log("===================================================\n");
     
@@ -50,7 +50,7 @@ cloudflared.stderr.on('data', (data) => {
     setTimeout(() => {
       console.log("=> Ouverture automatique du navigateur...");
       const { exec } = require('child_process');
-      exec('start http://localhost:3000');
+      exec('start http://localhost:3004');
     }, 3500);
   }
 });
