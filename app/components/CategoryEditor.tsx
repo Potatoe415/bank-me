@@ -1,6 +1,6 @@
 "use client";
 
-import { startTransition, useState } from "react";
+import { startTransition, useEffect, useRef, useState } from "react";
 import type { EditableTaxonomy } from "@/lib/taxonomy";
 import { formatCategoryPath } from "@/lib/taxonomy";
 import { updateTransactionCategory } from "@/app/actions";
@@ -21,79 +21,132 @@ export default function CategoryEditor({
   initialCategoryPath,
   taxonomy,
   isArchived,
+  isEditMode = false,
 }: {
   transactionId: string;
   initialCategoryPath: string;
   taxonomy: EditableTaxonomy;
   isArchived: boolean;
+  isEditMode?: boolean;
 }) {
   const [categoryPath, setCategoryPath] = useState(initialCategoryPath);
   const [saveState, setSaveState] = useState<SaveState>("idle");
-  const [isOpen, setIsOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const selectRef = useRef<HTMLSelectElement>(null);
+
+  useEffect(() => {
+    setCategoryPath(initialCategoryPath);
+  }, [initialCategoryPath]);
+
+  useEffect(() => {
+    if (isEditing && selectRef.current) {
+      selectRef.current.focus();
+    }
+  }, [isEditing]);
 
   function applySelection(value: string) {
-    if (!value) return;
+    if (!value || value === categoryPath) {
+      setIsEditing(false);
+      return;
+    }
     setSaveState("saving");
     startTransition(async () => {
       try {
         await updateTransactionCategory(transactionId, value);
         setCategoryPath(value);
         setSaveState("saved");
-        setIsOpen(false);
+        setIsEditing(false);
       } catch {
         setSaveState("error");
       }
     });
   }
 
+  function handleDoubleClick(e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsEditing(true);
+  }
+
   const label = formatCategoryPath(categoryPath);
 
   return (
-    <td className="px-3 py-2 align-top" colSpan={2}>
-      <div className="relative flex items-center gap-2">
-        {categoryPath && categoryPath !== "uncategorized" ? (
-          <span className={`rounded px-1.5 py-0.5 text-xs ${isArchived ? "bg-gray-200 text-gray-500" : "bg-indigo-50 text-indigo-600"}`}>
-            {label}
-          </span>
-        ) : (
-          <span className="text-gray-300">-</span>
-        )}
-
-        <button
-          type="button"
-          onClick={() => setIsOpen((current) => !current)}
-          title="Edit category"
-          className={`inline-flex h-6 w-6 items-center justify-center rounded-md border transition ${
-            isArchived
-              ? "border-gray-200 bg-gray-100 text-gray-400 hover:bg-gray-200"
-              : "border-gray-200 bg-white text-gray-500 hover:bg-gray-100 hover:text-gray-700"
-          }`}
+    <td
+      onDoubleClick={handleDoubleClick}
+      className="px-3 py-2 align-top"
+      colSpan={2}
+    >
+      {isEditing ? (
+        <div
+          className="flex items-center gap-1.5"
+          onClick={(e) => e.stopPropagation()}
+          onDoubleClick={(e) => e.stopPropagation()}
         >
-          <IconEdit />
-        </button>
-
-        {isOpen && (
-          <div className="absolute left-0 top-8 z-20 w-72 rounded-lg border border-gray-200 bg-white p-3 shadow-lg">
-            <select
-              defaultValue=""
-              onChange={(event) => applySelection(event.target.value)}
-              className="w-full rounded-md border border-gray-200 bg-white px-2 py-2 text-xs text-gray-700 shadow-sm outline-none transition focus:border-indigo-400"
+          <select
+            ref={selectRef}
+            autoFocus
+            value={categoryPath || ""}
+            onChange={(e) => applySelection(e.target.value)}
+            onBlur={() => setIsEditing(false)}
+            onKeyDown={(e) => {
+              if (e.key === "Escape") {
+                setIsEditing(false);
+              }
+            }}
+            className="w-full rounded border border-indigo-400 bg-white px-2 py-1 text-xs text-gray-800 shadow-sm outline-none focus:ring-1 focus:ring-indigo-500"
+          >
+            <option value="">Choose category...</option>
+            {taxonomy.paths.map((p) => (
+              <option key={p} value={p}>
+                {formatCategoryPath(p)}
+              </option>
+            ))}
+          </select>
+          {saveState === "saving" && (
+            <span className="text-[10px] text-gray-400">...</span>
+          )}
+        </div>
+      ) : (
+        <div className="flex items-center gap-2">
+          {categoryPath && categoryPath !== "uncategorized" ? (
+            <span
+              onDoubleClick={handleDoubleClick}
+              title="Double-click to edit category"
+              className={`cursor-pointer select-none rounded px-1.5 py-0.5 text-xs transition hover:ring-1 hover:ring-indigo-300 ${
+                isArchived ? "bg-gray-200 text-gray-500" : "bg-indigo-50 text-indigo-600"
+              }`}
             >
-              <option value="">Choose category path</option>
-              {taxonomy.paths.map((p) => (
-                <option key={p} value={p}>
-                  {formatCategoryPath(p)}
-                </option>
-              ))}
-            </select>
-            <p className={`mt-2 text-[10px] ${saveState === "error" ? "text-red-500" : "text-gray-400"}`}>
-              {saveState === "saving" && "Saving..."}
-              {saveState === "saved" && "Saved"}
-              {saveState === "error" && "Save failed"}
-            </p>
-          </div>
-        )}
-      </div>
+              {label}
+            </span>
+          ) : (
+            <span
+              onDoubleClick={handleDoubleClick}
+              title="Double-click to edit category"
+              className="cursor-pointer select-none rounded px-1.5 py-0.5 text-xs text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+            >
+              -
+            </span>
+          )}
+
+          {isEditMode && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsEditing(true);
+              }}
+              title="Edit category"
+              className={`inline-flex h-6 w-6 items-center justify-center rounded-md border transition ${
+                isArchived
+                  ? "border-gray-200 bg-gray-100 text-gray-400 hover:bg-gray-200"
+                  : "border-gray-200 bg-white text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+              }`}
+            >
+              <IconEdit />
+            </button>
+          )}
+        </div>
+      )}
     </td>
   );
 }

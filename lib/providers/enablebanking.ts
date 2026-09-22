@@ -254,10 +254,11 @@ export class EnableBankingProvider implements IProvider {
           const effectiveDate = tx.booking_date ?? tx.transaction_date;
           if (!effectiveDate) continue;
 
+          const creditDebitFlag = tx.credit_debit_indicator ?? "DBIT";
           const id =
             tx.transaction_id ??
             tx.entry_reference ??
-            `${uid}_${tx.booking_date}_${tx.transaction_amount.amount}`;
+            `${uid}_${tx.booking_date}_${creditDebitFlag}_${tx.transaction_amount.amount}`;
 
           const isDebit = tx.credit_debit_indicator !== "CRDT";
           const rawAmount = parseFloat(tx.transaction_amount.amount);
@@ -310,7 +311,42 @@ export class EnableBankingProvider implements IProvider {
       } while (continuationKey);
     }
 
-    return all;
+    const deduplicated: Transaction[] = [];
+    const grouped = new Map<string, Transaction[]>();
+    for (const tx of all) {
+      const key = `${tx.date}_${tx.amount}`;
+      const group = grouped.get(key) ?? [];
+      group.push(tx);
+      grouped.set(key, group);
+    }
+
+    for (const group of grouped.values()) {
+      if (group.length === 1) {
+        deduplicated.push(group[0]);
+        continue;
+      }
+      const toKeep = new Set<Transaction>();
+      for (let i = 0; i < group.length; i++) {
+        let isDupe = false;
+        for (let j = 0; j < group.length; j++) {
+          if (i === j) continue;
+          const descI = group[i].description;
+          const descJ = group[j].description;
+          if (descI === descJ && i > j) {
+            isDupe = true;
+            break;
+          }
+          if (descI.length > descJ.length && descI.startsWith(descJ)) {
+            isDupe = true;
+            break;
+          }
+        }
+        if (!isDupe) toKeep.add(group[i]);
+      }
+      deduplicated.push(...toKeep);
+    }
+
+    return deduplicated;
   }
 
   async fetchBalances(bankId = "revolut"): Promise<Balance[]> {

@@ -1,7 +1,9 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import type { Transaction } from "@/lib/providers/types";
 import type { EditableTaxonomy } from "@/lib/taxonomy";
 import { formatCategoryPath } from "@/lib/taxonomy";
@@ -119,6 +121,119 @@ function ArchiveButton({ isArchived, transactionId }: { isArchived: boolean; tra
   );
 }
 
+// ─── Column filter ────────────────────────────────────────────────────────────
+
+type ColumnFilterOption = { value: string; label: string; badge?: React.ReactNode };
+
+function ColumnFilter({
+  paramName,
+  options,
+  activeFilters,
+}: {
+  paramName: string;
+  options: ColumnFilterOption[];
+  activeFilters: Record<string, string>;
+}) {
+  const router   = useRouter();
+  const pathname = usePathname();
+  const [open, setOpen]     = useState(false);
+  const [pos, setPos]       = useState({ top: 0, left: 0 });
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const dropRef = useRef<HTMLDivElement>(null);
+
+  const currentValue = activeFilters[paramName] ?? "";
+  const isActive     = !!currentValue;
+
+  function toggle(e: React.MouseEvent) {
+    e.stopPropagation();
+    if (!open && btnRef.current) {
+      const r = btnRef.current.getBoundingClientRect();
+      setPos({ top: r.bottom + 4, left: r.left });
+    }
+    setOpen((v) => !v);
+  }
+
+  function select(value: string) {
+    const params = new URLSearchParams();
+    for (const [k, v] of Object.entries(activeFilters)) {
+      if (v) params.set(k, v);
+    }
+    if (value) params.set(paramName, value);
+    else       params.delete(paramName);
+    router.replace(`${pathname}?${params.toString()}`);
+    setOpen(false);
+  }
+
+  useEffect(() => {
+    if (!open) return;
+    function handler(e: MouseEvent) {
+      const target = e.target as Node;
+      if (
+        btnRef.current?.contains(target) ||
+        dropRef.current?.contains(target)
+      ) return;
+      setOpen(false);
+    }
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  return (
+    <>
+      <button
+        ref={btnRef}
+        type="button"
+        onClick={toggle}
+        title={isActive ? `Filtered: ${currentValue}` : "Filter"}
+        className={`ml-1 inline-flex items-center rounded p-0.5 transition-colors ${
+          isActive
+            ? "text-indigo-500"
+            : "text-gray-300 opacity-0 group-hover:opacity-100 hover:text-gray-500"
+        }`}
+      >
+        <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+          <path d="M1.5 2.5h13l-5 6.5V14l-3-1.5V9L1.5 2.5z" />
+        </svg>
+      </button>
+
+      {open && typeof document !== "undefined" && createPortal(
+        <div
+          ref={dropRef}
+          style={{ position: "fixed", top: pos.top, left: pos.left, zIndex: 9999 }}
+          className="min-w-[150px] rounded-lg border border-gray-200 bg-white py-1 shadow-xl"
+        >
+          <button
+            onClick={() => select("")}
+            className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs transition-colors hover:bg-gray-50 ${
+              !currentValue ? "font-semibold text-gray-800" : "text-gray-500"
+            }`}
+          >
+            <span className="w-3 shrink-0 text-indigo-500">{!currentValue ? "✓" : ""}</span>
+            All
+          </button>
+          <div className="my-1 border-t border-gray-100" />
+          {options.map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => select(opt.value)}
+              className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs transition-colors hover:bg-gray-50 ${
+                currentValue === opt.value ? "bg-indigo-50 font-semibold text-indigo-700" : "text-gray-700"
+              }`}
+            >
+              <span className="w-3 shrink-0 text-indigo-500">
+                {currentValue === opt.value ? "✓" : ""}
+              </span>
+              {opt.badge}
+              {opt.label}
+            </button>
+          ))}
+        </div>,
+        document.body
+      )}
+    </>
+  );
+}
+
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function TransactionsTable({
@@ -127,12 +242,14 @@ export default function TransactionsTable({
   isEditMode,
   taxonomy,
   hiddenColumns,
+  activeFilters = {},
 }: {
   transactions: Transaction[];
   showBankColumn: boolean;
   isEditMode: boolean;
   taxonomy: EditableTaxonomy;
   hiddenColumns: Set<ColumnId>;
+  activeFilters?: Record<string, string>;
 }) {
   const [colWidths, setColWidths] = useState<Partial<Record<string, number>>>({});
   const tableRef = useRef<HTMLTableElement>(null);
@@ -199,14 +316,52 @@ export default function TransactionsTable({
     />
   );
 
-  const thCls = "group relative px-3 py-2.5 text-left font-semibold overflow-hidden";
+  const thCls = "group relative px-3 py-2.5 text-left font-semibold";
+
+  // ── Distinct values for column filters ──────────────────────────
+  const bankOptions: ColumnFilterOption[] = [...new Set(transactions.map((t) => t.bank_id))]
+    .map((id) => {
+      const cfg = getBankById(id);
+      return {
+        value: id,
+        label: cfg?.name ?? id,
+        badge: cfg ? (
+          <span
+            className="flex h-4 w-4 shrink-0 items-center justify-center rounded text-[8px] font-bold text-white"
+            style={{ backgroundColor: cfg.color }}
+          >
+            {cfg.initial}
+          </span>
+        ) : undefined,
+      };
+    });
+
+  const categoryFilterOptions: ColumnFilterOption[] = [
+    ...new Set(
+      transactions
+        .map((t) => t.category_path)
+        .filter((p): p is string => !!p && p !== "uncategorized")
+    ),
+  ]
+    .sort()
+    .map((p) => ({ value: p, label: formatCategoryPath(p) }));
+
+  const sourceOptions: ColumnFilterOption[] = [
+    ...new Set(transactions.map((t) => t.categorization_source).filter(Boolean)),
+  ].map((s) => ({ value: s, label: SOURCE_LABELS[s] ?? s }));
+
+  const confidenceOptions: ColumnFilterOption[] = [
+    ...new Set(transactions.map((t) => t.confidence_level).filter(Boolean)),
+  ]
+    .sort((a, b) => ["low", "medium", "high"].indexOf(a) - ["low", "medium", "high"].indexOf(b))
+    .map((l) => ({ value: l, label: l }));
 
   return (
     <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
       <table
         ref={tableRef}
         className="whitespace-nowrap text-sm"
-        style={{ tableLayout: "fixed", width: getTotalWidth() }}
+        style={{ tableLayout: "fixed", width: "100%", minWidth: getTotalWidth() }}
       >
         <colgroup>
           <col data-colkey="date" style={{ width: getWidth("date") }} />
@@ -232,7 +387,15 @@ export default function TransactionsTable({
         <thead className="border-b border-gray-200 bg-gray-50 text-[11px] uppercase tracking-wide text-gray-500">
           <tr>
             <th className={thCls}>Date{handle("date")}</th>
-            {showBankColumn && show("bank") && <th className={thCls}>Bank{handle("bank")}</th>}
+            {showBankColumn && show("bank") && (
+              <th className={thCls}>
+                <span className="flex items-center">
+                  Bank
+                  <ColumnFilter paramName="bank" options={bankOptions} activeFilters={activeFilters} />
+                </span>
+                {handle("bank")}
+              </th>
+            )}
             {show("type") && <th className={thCls}>Type{handle("type")}</th>}
             {show("description") && <th className={thCls}>Description{handle("description")}</th>}
             {show("counterpart") && <th className={thCls}>Counterpart{handle("counterpart")}</th>}
@@ -247,13 +410,32 @@ export default function TransactionsTable({
                     disabled={visibleTransactionIds.length === 0}
                   />
                 ) : (
-                  "Category"
+                  <span className="flex items-center">
+                    Category
+                    <ColumnFilter paramName="category" options={categoryFilterOptions} activeFilters={activeFilters} />
+                  </span>
                 )}
                 {handle("category")}
               </th>
             )}
-            {show("source") && <th className={thCls}>Source{handle("source")}</th>}
-            {show("confidence") && <th className={thCls}>Conf.{handle("confidence")}</th>}
+            {show("source") && (
+              <th className={thCls}>
+                <span className="flex items-center">
+                  Source
+                  <ColumnFilter paramName="source" options={sourceOptions} activeFilters={activeFilters} />
+                </span>
+                {handle("source")}
+              </th>
+            )}
+            {show("confidence") && (
+              <th className={thCls}>
+                <span className="flex items-center">
+                  Conf.
+                  <ColumnFilter paramName="confidence_level" options={confidenceOptions} activeFilters={activeFilters} />
+                </span>
+                {handle("confidence")}
+              </th>
+            )}
             {show("review_status") && <th className={thCls}>Status{handle("review_status")}</th>}
             <th className={`${thCls} text-right`}>Amount{handle("amount")}</th>
             <th className="w-11 px-2 py-2.5" />
@@ -340,24 +522,13 @@ export default function TransactionsTable({
                 )}
 
                 {show("category") && (
-                  isEditMode ? (
-                    <CategoryEditor
-                      transactionId={tx.id}
-                      initialCategoryPath={tx.category_path}
-                      taxonomy={taxonomy}
-                      isArchived={isArchived}
-                    />
-                  ) : (
-                    <td className="px-3 py-2 align-top" colSpan={2}>
-                      {tx.category_path && tx.category_path !== "uncategorized" ? (
-                        <span className={`rounded px-1.5 py-0.5 text-xs ${isArchived ? "bg-gray-200 text-gray-500" : "bg-indigo-50 text-indigo-600"}`}>
-                          {formatCategoryPath(tx.category_path)}
-                        </span>
-                      ) : (
-                        <span className="text-gray-300">-</span>
-                      )}
-                    </td>
-                  )
+                  <CategoryEditor
+                    transactionId={tx.id}
+                    initialCategoryPath={tx.category_path}
+                    taxonomy={taxonomy}
+                    isArchived={isArchived}
+                    isEditMode={isEditMode}
+                  />
                 )}
 
                 {show("source") && (

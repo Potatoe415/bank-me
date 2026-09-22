@@ -9,7 +9,8 @@ type TxRow = {
   description: string;
   counterpart: string | null;
   tx_type: string | null;
-  category_path: string;
+  category_path: string | null;
+  confidence_level: string | null;
 };
 
 function buildFullDescription(tx: TxRow): string {
@@ -51,13 +52,29 @@ function getDateRange(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
-  const param               = request.nextUrl.searchParams.get("banks") ?? "all";
-  const withCategories      = request.nextUrl.searchParams.get("categories") === "1";
-  const uncategorizedOnly   = request.nextUrl.searchParams.get("uncategorized_only") === "1";
-  const excludeCategorized  = request.nextUrl.searchParams.get("exclude_categorized") === "1";
-  const { from, to }        = getDateRange(request);
+  const param              = request.nextUrl.searchParams.get("banks") ?? "all";
+  const withCategories     = request.nextUrl.searchParams.get("categories") === "1";
+  const uncategorizedOnly  = request.nextUrl.searchParams.get("uncategorized_only") === "1";
+  const excludeCategorized = request.nextUrl.searchParams.get("exclude_categorized") === "1";
+  const { from, to }       = getDateRange(request);
 
-  const COLS = "id, date, bank_id, amount, description, counterpart, tx_type, category_path";
+  const VALID_CONFIDENCE = new Set(["low", "medium", "high"]);
+  const VALID_SOURCES    = new Set(["llm", "manual", "rule"]);
+
+  const excludeConfidenceLevels = (request.nextUrl.searchParams.get("exclude_confidence") ?? "")
+    .split(",").map((v) => v.trim()).filter((v) => VALID_CONFIDENCE.has(v));
+  const excludeSourceTypes = (request.nextUrl.searchParams.get("exclude_source") ?? "")
+    .split(",").map((v) => v.trim()).filter((v) => VALID_SOURCES.has(v));
+
+  // Safe to interpolate — values are validated against a known whitelist above
+  const confidenceExcludeFilter = excludeConfidenceLevels.length > 0
+    ? `AND (confidence_level IS NULL OR confidence_level NOT IN (${excludeConfidenceLevels.map((v) => `'${v}'`).join(",")}))`
+    : "";
+  const sourceExcludeFilter = excludeSourceTypes.length > 0
+    ? `AND (categorization_source IS NULL OR categorization_source NOT IN (${excludeSourceTypes.map((v) => `'${v}'`).join(",")}))`
+    : "";
+
+  const COLS = "id, date, bank_id, amount, description, counterpart, tx_type, category_path, confidence_level";
 
   const uncategorizedFilter = uncategorizedOnly
     ? `AND (category_path IS NULL OR category_path = 'uncategorized')
@@ -81,6 +98,8 @@ export async function GET(request: NextRequest) {
            AND is_deleted = 0
            AND archived_at IS NULL
            ${uncategorizedFilter}
+           ${confidenceExcludeFilter}
+           ${sourceExcludeFilter}
            ${dateFilter}
          ORDER BY date DESC`
       )
@@ -96,6 +115,8 @@ export async function GET(request: NextRequest) {
            AND is_deleted = 0
            AND archived_at IS NULL
            ${uncategorizedFilter}
+           ${confidenceExcludeFilter}
+           ${sourceExcludeFilter}
            ${dateFilter}
          ORDER BY bank_id, date DESC`
       )
@@ -103,8 +124,8 @@ export async function GET(request: NextRequest) {
   }
 
   const header = withCategories
-    ? "id,date,bank_id,amount,full_description,category_path"
-    : "id,date,bank_id,amount,full_description";
+    ? "id,date,bank_id,amount,full_description,category_path,confidence_level"
+    : "id,date,bank_id,amount,full_description,confidence_level";
 
   function quoteField(v: string | null): string {
     if (!v) return '""';
@@ -116,12 +137,14 @@ export async function GET(request: NextRequest) {
     const amount          = Number(tx.amount).toFixed(2);
     const fullDescription = buildFullDescription(tx);
     const base            = `${tx.id},${date},${tx.bank_id},${amount},${fullDescription}`;
-    if (!withCategories) return base;
-    return `${base},${quoteField(tx.category_path)}`;
+    if (!withCategories) return `${base},${quoteField(tx.confidence_level)}`;
+    return `${base},${quoteField(tx.category_path)},${quoteField(tx.confidence_level)}`;
   });
 
   const csv = [header, ...lines].join("\r\n");
-  const filename = `transactions_${new Date().toISOString().slice(0, 10)}.csv`;
+  const filename = uncategorizedOnly
+    ? `transactions_uncategorized_${new Date().toISOString().slice(0, 10)}.csv`
+    : `transactions_${from}_${to}.csv`;
 
   return new NextResponse(csv, {
     status: 200,

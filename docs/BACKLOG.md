@@ -36,3 +36,4 @@ Status: Living document. Always reflects current state.
 - [x] Transaction filters: date range, category, text search, amount operators.
 - [x] Pagination (page size 100, URL-preserved filters).
 - [x] Export workflow: CSV export + taxonomy prompt + category import.
+- [x] Category Stats Dashboard page (/category-stats) and sidebar navigation menu.

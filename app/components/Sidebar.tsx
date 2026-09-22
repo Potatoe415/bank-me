@@ -77,6 +77,27 @@ function IconChart() {
   );
 }
 
+function IconCategory() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <rect x="2" y="2" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.25" />
+      <rect x="9" y="2" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.25" />
+      <rect x="2" y="9" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.25" />
+      <rect x="9" y="9" width="5" height="5" rx="1" stroke="currentColor" strokeWidth="1.25" fill="currentColor" opacity="0.4" />
+    </svg>
+  );
+}
+
+function IconWave() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+      <path d="M1 8.5c1-2 2-2 3 0s2 2 3 0 2-2 3 0 2 2 3 0" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M8 4V2M10.5 5l1-1.5M5.5 5l-1-1.5" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" opacity=".5" />
+      <path d="M3 13h10" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" opacity=".3" />
+    </svg>
+  );
+}
+
 function IconArchiveRestore() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -130,6 +151,8 @@ export default function Sidebar({
   const searchParams = useSearchParams();
   const isOverview  = pathname === "/overview";
   const isGraphics  = pathname === "/graphics";
+  const isCategoryStats = pathname === "/category-stats";
+  const isRulePropagation = pathname === "/rule-propagation";
   const isExport    = pathname === "/export";
   const bankParam   = searchParams.get("bank");
   const isAllBanks  = pathname === "/" && bankParam === "all";
@@ -266,6 +289,33 @@ export default function Sidebar({
             >
               <span className="shrink-0"><IconChart /></span>
               {!collapsed && <span>Graphics</span>}
+            </Link>
+            <Link
+              href="/category-stats"
+              className={`flex items-center gap-2.5 px-2 py-2 rounded-md text-sm transition-colors ${
+                isCategoryStats
+                  ? "bg-indigo-50 text-indigo-700 font-medium"
+                  : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+              } ${collapsed ? "justify-center" : ""}`}
+            >
+              <span className="shrink-0"><IconCategory /></span>
+              {!collapsed && <span>Category Stats</span>}
+            </Link>
+            <Link
+              href="/rule-propagation"
+              className={`flex items-center gap-2.5 px-2 py-2 rounded-md text-sm transition-colors ${
+                isRulePropagation
+                  ? "bg-indigo-50 text-indigo-700 font-medium"
+                  : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+              } ${collapsed ? "justify-center" : ""}`}
+            >
+              <span className="shrink-0"><IconWave /></span>
+              {!collapsed && (
+                <span className="flex min-w-0 flex-1 items-center justify-between gap-2">
+                  <span className="truncate">Rule Engine</span>
+                  <span className="rounded-full bg-indigo-100 text-indigo-600 text-[10px] font-semibold px-1.5 py-0.5">W1</span>
+                </span>
+              )}
             </Link>
             <Link
               href="/export"

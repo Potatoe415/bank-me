@@ -9,6 +9,10 @@ type PageProps = {
     imported?: string;
     skipped?: string;
     total?: string;
+    skip_missing?: string;
+    skip_not_found?: string;
+    skip_same?: string;
+    skip_manual?: string;
     import_error?: string;
   }>;
 };
@@ -54,6 +58,10 @@ export default async function ExportPage({ searchParams }: PageProps) {
         imported={toNumber(params.imported)}
         skipped={toNumber(params.skipped)}
         total={toNumber(params.total)}
+        skipMissing={toNumber(params.skip_missing)}
+        skipNotFound={toNumber(params.skip_not_found)}
+        skipSame={toNumber(params.skip_same)}
+        skipManual={toNumber(params.skip_manual)}
         importError={params.import_error}
       />
     </main>

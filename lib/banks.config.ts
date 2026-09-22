@@ -26,6 +26,7 @@ export const BANKS: BankConfig[] = [
   { id: "wise",          name: "Wise",              aspspName: "Wise",                country: "FR", color: "#9fe870", initial: "W",  popular: true },
   { id: "hsbc",          name: "HSBC",              aspspName: "HSBC",                country: "FR", color: "#db0011", initial: "H",  popular: true },
   { id: "paypal",        name: "PayPal",            aspspName: "PayPal",              country: "FR", color: "#003087", initial: "PP", popular: true },
+  { id: "paypal-us",     name: "PayPal US",         aspspName: "PayPal",              country: "FR", color: "#003087", initial: "PP" },
 
   // ── Crédit Agricole (régions) ─────────────────────────────────────────
   { id: "ca-idf",        name: "CA Île-de-France",          aspspName: "Crédit Agricole de Paris et d'Ile de France", country: "FR", color: "#00843d", initial: "CA" },

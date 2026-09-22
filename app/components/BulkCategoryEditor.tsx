@@ -1,6 +1,7 @@
 "use client";
 
 import { startTransition, useState } from "react";
+import { useRouter } from "next/navigation";
 import type { EditableTaxonomy } from "@/lib/taxonomy";
 import { formatCategoryPath } from "@/lib/taxonomy";
 import { bulkUpdateTransactionCategories } from "@/app/actions";
@@ -25,6 +26,7 @@ export default function BulkCategoryEditor({
   transactionIds: string[];
   disabled: boolean;
 }) {
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [selectedValue, setSelectedValue] = useState("");
   const [saveState, setSaveState] = useState<SaveState>("idle");
@@ -39,6 +41,7 @@ export default function BulkCategoryEditor({
         await bulkUpdateTransactionCategories(transactionIds, value);
         setSaveState("saved");
         setIsOpen(false);
+        router.refresh();
       } catch {
         setSaveState("error");
       }

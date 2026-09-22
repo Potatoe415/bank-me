@@ -1,6 +1,8 @@
 import db from "@/lib/db";
 import { BANKS } from "@/lib/banks.config";
 
+export const dynamic = "force-dynamic";
+
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
 function getConnectedBankIds(): string[] {

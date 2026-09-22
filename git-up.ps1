@@ -39,9 +39,3 @@ if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE 
 }
 
-Write-Host "--- supabase db push"
-npx supabase db push
-if ($LASTEXITCODE -ne 0) { 
-    Write-Error "Échec de la synchronisation Supabase."
-    exit $LASTEXITCODE 
-}

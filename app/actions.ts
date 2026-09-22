@@ -1,14 +1,17 @@
 "use server";
 
-import { revalidatePath, refresh } from "next/cache";
+import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { writeFile } from "node:fs/promises";
+import path from "node:path";
 import db from "@/lib/db";
 import { getProvider } from "@/lib/providers";
 import { importCategoriesCsv } from "@/lib/category-import";
 import { TRANSACTION_EDIT_MODE_COOKIE } from "@/lib/transaction-edit-mode";
 import { COLUMN_PREFS_COOKIE, serializeHiddenColumns, type ColumnId } from "@/lib/column-prefs";
 import { deriveCategoryMetadata } from "@/lib/taxonomy";
+import { runWave1Propagation, WAVE1_SAFE_PARAMS, runCustomKeywordRules } from "@/lib/rule-propagation";
 
 const insertTx = db.prepare(
   `INSERT INTO transactions
@@ -53,7 +56,9 @@ export async function syncAllTransactions(bankIds: string[]): Promise<{ errors: 
         .prepare("SELECT date FROM transactions WHERE bank_id = ? AND date NOT LIKE 'null%' ORDER BY date DESC LIMIT 1")
         .get(bankId) as { date: string } | undefined;
 
-      const transactions = await provider.fetchTransactions(lastTxRow?.date, bankId);
+      // Force sync since start of 2025 to recover missing refunds and missing history
+      const forceSince = "2025-01-01T00:00:00.000Z";
+      const transactions = await provider.fetchTransactions(forceSince, bankId);
       for (const tx of transactions) {
         insertTx.run(tx);
       }
@@ -73,6 +78,20 @@ export async function syncAllTransactions(bankIds: string[]): Promise<{ errors: 
     }
   }
 
+  // Custom rules & Wave 1 auto-propagation
+  try {
+    const customApplied = runCustomKeywordRules();
+    if (customApplied > 0) {
+      console.log(`[custom] Keyword rules applied: ${customApplied} transactions catégorisées`);
+    }
+    const wave1 = runWave1Propagation(WAVE1_SAFE_PARAMS);
+    if (wave1.stats.applied > 0) {
+      console.log(`[wave1] Auto-propagation post-sync: ${wave1.stats.applied} transactions catégorisées`);
+    }
+  } catch (e) {
+    console.warn("[wave1] Auto-propagation échouée (non-bloquant):", e);
+  }
+
   revalidatePath("/");
   revalidatePath("/overview");
   return { errors };
@@ -86,7 +105,9 @@ export async function syncTransactions(bankId: string) {
       .prepare("SELECT date FROM transactions WHERE bank_id = ? AND date NOT LIKE 'null%' ORDER BY date DESC LIMIT 1")
       .get(bankId) as { date: string } | undefined;
 
-    const transactions = await provider.fetchTransactions(lastTxRow?.date, bankId);
+    // Force sync since start of 2025 to recover missing refunds and missing history
+    const forceSince = "2025-01-01T00:00:00.000Z";
+    const transactions = await provider.fetchTransactions(forceSince, bankId);
     for (const tx of transactions) {
       insertTx.run(tx);
     }
@@ -98,6 +119,20 @@ export async function syncTransactions(bankId: string) {
       }
     } catch (e) {
       console.warn(`[sync] fetchBalances failed for ${bankId}:`, e);
+    }
+
+    // Custom rules & Wave 1 auto-propagation
+    try {
+      const customApplied = runCustomKeywordRules();
+      if (customApplied > 0) {
+        console.log(`[custom] Keyword rules applied: ${customApplied} transactions catégorisées`);
+      }
+      const wave1 = runWave1Propagation(WAVE1_SAFE_PARAMS);
+      if (wave1.stats.applied > 0) {
+        console.log(`[wave1] Auto-propagation post-sync (${bankId}): ${wave1.stats.applied} transactions catégorisées`);
+      }
+    } catch (e) {
+      console.warn("[wave1] Auto-propagation échouée (non-bloquant):", e);
     }
 
     revalidatePath("/");
@@ -125,9 +160,13 @@ export async function importCategories(formData: FormData) {
     revalidatePath("/export");
 
     const params = new URLSearchParams({
-      imported: String(result.updated),
-      skipped: String(result.skipped),
-      total: String(result.totalRows),
+      imported:        String(result.updated),
+      skipped:         String(result.skipped),
+      total:           String(result.totalRows),
+      skip_missing:    String(result.skipCounts.missingData),
+      skip_not_found:  String(result.skipCounts.notFound),
+      skip_same:       String(result.skipCounts.alreadySame),
+      skip_manual:     String(result.skipCounts.manual),
     });
     destination = `/export?${params.toString()}`;
   } catch (e) {
@@ -173,7 +212,7 @@ export async function setTransactionEditMode(enabled: boolean) {
     path: "/",
     sameSite: "lax",
   });
-  refresh();
+  revalidatePath("/");
 }
 
 function revalidateTransactionViews() {
@@ -312,4 +351,10 @@ export async function deleteTaxonomyCategory(formData: FormData) {
   })();
 
   revalidateTaxonomyViews();
+}
+
+export async function saveTaxonomyPrompt(content: string) {
+  const filePath = path.join(process.cwd(), "taxonomy_prompt.md");
+  await writeFile(filePath, content, "utf8");
+  revalidatePath("/export");
 }

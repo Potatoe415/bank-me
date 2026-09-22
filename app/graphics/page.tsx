@@ -113,7 +113,7 @@ function buildCurrencyAnalytics(rows: SpendingRow[]): CurrencyAnalytics[] {
       let uncategorizedCount = 0;
 
       for (const row of currencyRows) {
-        const spend = Math.abs(row.amount);
+        const spend = -row.amount;
         totalSpend += spend;
 
         const path = row.category_path || "uncategorized";
@@ -138,7 +138,12 @@ function buildCurrencyAnalytics(rows: SpendingRow[]): CurrencyAnalytics[] {
         monthTotals.set(monthKey, (monthTotals.get(monthKey) ?? 0) + spend);
       }
 
-      const topCategories = [...categoryTotals.entries()]
+      const positiveCategories = [...categoryTotals.entries()]
+        .filter(([, data]) => data.amount > 0);
+      
+      const pieTotal = positiveCategories.reduce((sum, [, data]) => sum + data.amount, 0);
+
+      const topCategories = positiveCategories
         .sort((a, b) => b[1].amount - a[1].amount)
         .slice(0, 8)
         .map(([path, data], index) => ({
@@ -146,7 +151,7 @@ function buildCurrencyAnalytics(rows: SpendingRow[]): CurrencyAnalytics[] {
           categoryPath: path,
           amount: data.amount,
           count: data.count,
-          share: totalSpend > 0 ? data.amount / totalSpend : 0,
+          share: pieTotal > 0 ? data.amount / pieTotal : 0,
           color: CATEGORY_COLORS[index % CATEGORY_COLORS.length],
         }));
 
@@ -290,6 +295,12 @@ export default async function GraphicsPage({ searchParams }: PageProps) {
             className="rounded-full bg-gray-100 px-3 py-1.5 text-sm text-gray-600 transition-colors hover:bg-gray-200"
           >
             Actionable Drilldown
+          </Link>
+          <Link
+            href={bankId === "all" ? "/graphics-name" : `/graphics-name?bank=${bankId}`}
+            className="rounded-full bg-gray-100 px-3 py-1.5 text-sm text-gray-600 transition-colors hover:bg-gray-200"
+          >
+            Name Drilldown
           </Link>
         </div>
 

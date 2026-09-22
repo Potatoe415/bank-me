@@ -18,8 +18,35 @@ function getAccountUids(bankId: string): string[] {
   return row ? JSON.parse(row.account_uids) : [];
 }
 
-const PAGE_SIZE = 100;
+function getLastSyncDate(bankId: string): string | null {
+  const row = db
+    .prepare("SELECT MAX(updated_at) AS last_sync FROM account_balances WHERE bank_id = ?")
+    .get(bankId) as { last_sync: string | null } | undefined;
+  return row?.last_sync ?? null;
+}
+
+function fmtSyncDate(isoStr: string): string {
+  const d = new Date(isoStr + (isoStr.endsWith("Z") ? "" : "Z"));
+  const now = new Date();
+  const diffMs = now.getTime() - d.getTime();
+  const diffMin = Math.floor(diffMs / 60000);
+  if (diffMin < 1) return "just now";
+  if (diffMin < 60) return `${diffMin}m ago`;
+  const diffH = Math.floor(diffMin / 60);
+  if (diffH < 24) return `${diffH}h ago`;
+  const diffD = Math.floor(diffH / 24);
+  if (diffD < 7) return `${diffD}d ago`;
+  return d.toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" });
+}
+
+const DEFAULT_PAGE_SIZE = 100;
+const ALLOWED_PAGE_SIZES = [25, 50, 100, 200, 500] as const;
 const EMPTY_FILTER_VALUE = "__empty__";
+
+function parsePageSize(value: string | undefined): number {
+  const n = parseInt(value ?? "", 10);
+  return (ALLOWED_PAGE_SIZES as readonly number[]).includes(n) ? n : DEFAULT_PAGE_SIZE;
+}
 
 type SearchParamsInput = Record<string, string | string[] | undefined>;
 
@@ -32,6 +59,8 @@ type QueryFilters = {
   to: string | null;
   category: string | null;
   reviewStatus: string | null;
+  confidenceLevel: string | null;
+  source: string | null;
   query: string | null;
   amountInput: string;
   amountOperator: "=" | ">" | "<" | ">=" | "<=" | null;
@@ -126,8 +155,17 @@ function buildSqlFilters(bankId: string | null, filters: QueryFilters, options: 
   }
 
   if (filters.query) {
-    clauses.push("(LOWER(description) LIKE @query OR LOWER(COALESCE(counterpart, '')) LIKE @query)");
-    params.query = `%${filters.query.toLowerCase()}%`;
+    const terms = filters.query.split(/\s+OR\s+/i).map((t) => t.trim()).filter(Boolean);
+    if (terms.length === 1) {
+      clauses.push("(LOWER(description) LIKE @query OR LOWER(COALESCE(counterpart, '')) LIKE @query)");
+      params.query = `%${terms[0].toLowerCase()}%`;
+    } else {
+      const subClauses = terms.map((term, i) => {
+        params[`query${i}`] = `%${term.toLowerCase()}%`;
+        return `(LOWER(description) LIKE @query${i} OR LOWER(COALESCE(counterpart, '')) LIKE @query${i})`;
+      });
+      clauses.push(`(${subClauses.join(" OR ")})`);
+    }
   }
 
   if (filters.amountAbs !== null) {
@@ -161,6 +199,17 @@ function buildSqlFilters(bankId: string | null, filters: QueryFilters, options: 
     params.reviewStatus = filters.reviewStatus;
   }
 
+  const VALID_CONFIDENCE = new Set(["low", "medium", "high"]);
+  if (filters.confidenceLevel && VALID_CONFIDENCE.has(filters.confidenceLevel)) {
+    clauses.push("confidence_level = @confidenceLevel");
+    params.confidenceLevel = filters.confidenceLevel;
+  }
+
+  if (filters.source) {
+    clauses.push("categorization_source = @source");
+    params.source = filters.source;
+  }
+
   const whereSql = clauses.length > 0 ? `WHERE ${clauses.join(" AND ")}` : "";
   return { whereSql, params };
 }
@@ -176,20 +225,16 @@ function getDistinctCategoryOptions(bankId: string | null, filters: QueryFilters
     .all(params) as Array<{ category_path: string }>;
 
   const options: FilterOption[] = [];
-  let hasUncategorized = false;
 
   for (const row of rows) {
     const path = row.category_path;
     if (!path || path === "uncategorized") {
-      hasUncategorized = true;
       continue;
     }
     options.push({ value: path, label: formatCategoryPath(path) });
   }
 
-  if (hasUncategorized) {
-    options.unshift({ value: EMPTY_FILTER_VALUE, label: "Uncategorized" });
-  }
+  options.unshift({ value: EMPTY_FILTER_VALUE, label: "Uncategorized" });
 
   return options;
 }
@@ -214,19 +259,36 @@ function getVisibleTotals(transactions: Transaction[]) {
   return [...totals.entries()].map(([currency, amount]) => fmt(amount, currency));
 }
 
+function getGrandTotals(bankId: string | null, filters: QueryFilters) {
+  const { whereSql, params } = buildSqlFilters(bankId, filters, { activeOnly: true });
+  const rows = db
+    .prepare(
+      `SELECT currency, SUM(amount) as total
+       FROM transactions
+       ${whereSql} AND is_excluded_from_spending = 0
+       GROUP BY currency`
+    )
+    .all(params) as Array<{ currency: string; total: number }>;
+
+  return rows.map(({ currency, total }) => fmt(total, currency));
+}
+
 function countArchived(transactions: Transaction[]) {
   return transactions.filter((tx) => tx.archived_at !== null).length;
 }
 
-function buildPageHref(bankId: string, page: number, filters: QueryFilters) {
+function buildPageHref(bankId: string, page: number, filters: QueryFilters, pageSize: number) {
   const params = new URLSearchParams({ bank: bankId, page: String(page) });
 
-  if (filters.from) params.set("from", filters.from);
-  if (filters.to) params.set("to", filters.to);
-  if (filters.category) params.set("category", filters.category);
-  if (filters.reviewStatus) params.set("review_status", filters.reviewStatus);
-  if (filters.query) params.set("query", filters.query);
-  if (filters.amountInput) params.set("amount", filters.amountInput);
+  if (filters.from)            params.set("from", filters.from);
+  if (filters.to)              params.set("to", filters.to);
+  if (filters.category)        params.set("category", filters.category);
+  if (filters.reviewStatus)    params.set("review_status", filters.reviewStatus);
+  if (filters.confidenceLevel) params.set("confidence_level", filters.confidenceLevel);
+  if (filters.source)          params.set("source", filters.source);
+  if (filters.query)           params.set("query", filters.query);
+  if (filters.amountInput)     params.set("amount", filters.amountInput);
+  if (pageSize !== DEFAULT_PAGE_SIZE) params.set("page_size", String(pageSize));
 
   return `/?${params.toString()}`;
 }
@@ -234,7 +296,8 @@ function buildPageHref(bankId: string, page: number, filters: QueryFilters) {
 function getPaginatedTransactions(
   bankId: string | null,
   filters: QueryFilters,
-  rawPage: string | undefined
+  rawPage: string | undefined,
+  pageSize: number
 ): PaginatedTransactionsResult {
   const safePage = Math.max(1, parseInt(rawPage ?? "1", 10) || 1);
   const { whereSql, params } = buildSqlFilters(bankId, filters);
@@ -247,9 +310,9 @@ function getPaginatedTransactions(
     .prepare(`SELECT COUNT(*) as count FROM transactions ${whereSql}`)
     .get(params) as { count: number };
 
-  const totalPages = Math.max(1, Math.ceil(displayTotal / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(displayTotal / pageSize));
   const currentPage = Math.min(safePage, totalPages);
-  const offset = (currentPage - 1) * PAGE_SIZE;
+  const offset = (currentPage - 1) * pageSize;
   const orderBy = filters.reviewStatus === "needs_review"
     ? `ORDER BY CASE confidence_level WHEN 'low' THEN 1 WHEN 'medium' THEN 2 WHEN 'high' THEN 3 ELSE 4 END ASC, date DESC`
     : `ORDER BY date DESC`;
@@ -261,7 +324,7 @@ function getPaginatedTransactions(
        ${orderBy}
        LIMIT @limit OFFSET @offset`
     )
-    .all({ ...params, limit: PAGE_SIZE, offset }) as Transaction[];
+    .all({ ...params, limit: pageSize, offset }) as Transaction[];
 
   return {
     totalActive,
@@ -301,11 +364,13 @@ function PaginationNav({
   filters,
   currentPage,
   totalPages,
+  pageSize,
 }: {
   bankId: string;
   filters: QueryFilters;
   currentPage: number;
   totalPages: number;
+  pageSize: number;
 }) {
   if (totalPages <= 1) {
     return null;
@@ -319,7 +384,7 @@ function PaginationNav({
       <div className="flex gap-1">
         {currentPage > 1 && (
           <Link
-            href={buildPageHref(bankId, currentPage - 1, filters)}
+            href={buildPageHref(bankId, currentPage - 1, filters, pageSize)}
             className="rounded-md border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-600 transition-colors hover:bg-gray-50"
           >
             Previous
@@ -327,7 +392,7 @@ function PaginationNav({
         )}
         {currentPage < totalPages && (
           <Link
-            href={buildPageHref(bankId, currentPage + 1, filters)}
+            href={buildPageHref(bankId, currentPage + 1, filters, pageSize)}
             className="rounded-md border border-gray-200 bg-white px-3 py-1.5 text-sm text-gray-600 transition-colors hover:bg-gray-50"
           >
             Next
@@ -348,7 +413,7 @@ export default async function Home({ searchParams }: PageProps) {
   const syncError = firstString(rawParams.sync_error);
   const bankId = firstString(rawParams.bank) ?? "revolut";
   const rawPage = firstString(rawParams.page);
-  const defaultDateRange = getDefaultDateRange();
+  const pageSize = parsePageSize(firstString(rawParams.page_size));
 
   const amountFilter = parseAmountFilter(normalizeAmountInput(firstString(rawParams.amount)));
 
@@ -357,6 +422,8 @@ export default async function Home({ searchParams }: PageProps) {
     to: normalizeDate(firstString(rawParams.to)),
     category: normalizeText(firstString(rawParams.category)),
     reviewStatus: normalizeText(firstString(rawParams.review_status)),
+    confidenceLevel: normalizeText(firstString(rawParams.confidence_level)),
+    source: normalizeText(firstString(rawParams.source)),
     query: normalizeText(firstString(rawParams.query)),
     amountInput: normalizeAmountInput(firstString(rawParams.amount)),
     amountOperator: amountFilter.amountOperator,
@@ -367,31 +434,50 @@ export default async function Home({ searchParams }: PageProps) {
   const categoryOptions = getDistinctCategoryOptions(visibleBankId, filters);
   const hasActiveFilters = Boolean(
     filters.from ||
-      filters.to ||
-      filters.category ||
-      filters.reviewStatus ||
-      filters.query ||
-      filters.amountInput
+    filters.to ||
+    filters.category ||
+    filters.reviewStatus ||
+    filters.confidenceLevel ||
+    filters.source ||
+    filters.query ||
+    filters.amountInput
   );
+
+  const activeFilters: Record<string, string> = {
+    bank: bankId,
+    ...(filters.from            && { from: filters.from }),
+    ...(filters.to              && { to: filters.to }),
+    ...(filters.category        && { category: filters.category }),
+    ...(filters.reviewStatus    && { review_status: filters.reviewStatus }),
+    ...(filters.confidenceLevel && { confidence_level: filters.confidenceLevel }),
+    ...(filters.source          && { source: filters.source }),
+    ...(filters.query           && { query: filters.query }),
+    ...(filters.amountInput     && { amount: filters.amountInput }),
+  };
 
   const filterProps = {
     bankId,
     initialValues: {
-      from: filters.from ?? defaultDateRange.from,
-      to: filters.to ?? defaultDateRange.to,
+      from: filters.from ?? "",
+      to: filters.to ?? "",
       category: filters.category ?? "",
       reviewStatus: filters.reviewStatus ?? "",
+      confidenceLevel: filters.confidenceLevel ?? "",
+      source: filters.source ?? "",
       query: filters.query ?? "",
       amount: filters.amountInput,
+      pageSize,
     },
     categoryOptions,
     resetHref: `/?bank=${bankId}`,
     hasActiveFilters,
+    allowedPageSizes: ALLOWED_PAGE_SIZES,
   };
 
   if (bankId === "all") {
-    const { totalActive, transactions, totalPages, currentPage } = getPaginatedTransactions(null, filters, rawPage);
+    const { totalActive, transactions, totalPages, currentPage } = getPaginatedTransactions(null, filters, rawPage, pageSize);
     const visibleTotals = getVisibleTotals(transactions);
+    const grandTotals = getGrandTotals(null, filters);
     const archivedShown = countArchived(transactions);
     const activeShown = transactions.length - archivedShown;
 
@@ -415,14 +501,15 @@ export default async function Home({ searchParams }: PageProps) {
           {...filterProps}
           resultLabel={resultLabel(activeShown, archivedShown, totalActive)}
           totalLabel={visibleTotals.length > 0 ? `Visible total: ${visibleTotals.join(" | ")}` : null}
+          grandTotalLabel={grandTotals.length > 0 ? `Total: ${grandTotals.join(" | ")}` : null}
         />
 
         {transactions.length === 0 ? (
           <p className="text-sm text-gray-500">No transactions found.</p>
         ) : (
           <>
-            <TransactionsTable transactions={transactions} showBankColumn isEditMode={isEditMode} taxonomy={taxonomy} hiddenColumns={hiddenColumns} />
-            <PaginationNav bankId={bankId} filters={filters} currentPage={currentPage} totalPages={totalPages} />
+            <TransactionsTable transactions={transactions} showBankColumn isEditMode={isEditMode} taxonomy={taxonomy} hiddenColumns={hiddenColumns} activeFilters={activeFilters} />
+            <PaginationNav bankId={bankId} filters={filters} currentPage={currentPage} totalPages={totalPages} pageSize={pageSize} />
           </>
         )}
       </main>
@@ -435,11 +522,14 @@ export default async function Home({ searchParams }: PageProps) {
   const accountUids = isConnected ? getAccountUids(bankId) : [];
   const hasAccounts = accountUids.length > 0;
 
-  const { totalActive, transactions, totalPages, currentPage } = getPaginatedTransactions(bankId, filters, rawPage);
+  const { totalActive, transactions, totalPages, currentPage } = getPaginatedTransactions(bankId, filters, rawPage, pageSize);
   const visibleTotals = getVisibleTotals(transactions);
+  const grandTotals = getGrandTotals(visibleBankId, filters);
   const archivedShown = countArchived(transactions);
   const activeShown = transactions.length - archivedShown;
   const syncWithBank = syncTransactions.bind(null, bankId);
+  const lastSyncRaw = getLastSyncDate(bankId);
+  const lastSyncLabel = lastSyncRaw ? fmtSyncDate(lastSyncRaw) : null;
 
   return (
     <main className="px-8 py-8">
@@ -479,14 +569,19 @@ export default async function Home({ searchParams }: PageProps) {
               Connect {bankLabel}
             </a>
           ) : hasAccounts ? (
-            <form action={syncWithBank}>
-              <button
-                type="submit"
-                className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
-              >
-                Synchronize
-              </button>
-            </form>
+            <div className="flex items-center gap-2">
+              {lastSyncLabel && (
+                <span className="text-xs text-gray-400">Synced {lastSyncLabel}</span>
+              )}
+              <form action={syncWithBank}>
+                <button
+                  type="submit"
+                  className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700"
+                >
+                  Synchronize
+                </button>
+              </form>
+            </div>
           ) : (
             <a
               href={`/api/connect?bank=${bankId}`}
@@ -503,6 +598,7 @@ export default async function Home({ searchParams }: PageProps) {
           {...filterProps}
           resultLabel={resultLabel(activeShown, archivedShown, totalActive)}
           totalLabel={visibleTotals.length > 0 ? `Visible total: ${visibleTotals.join(" | ")}` : null}
+          grandTotalLabel={grandTotals.length > 0 ? `Total: ${grandTotals.join(" | ")}` : null}
         />
       )}
 
@@ -532,8 +628,8 @@ export default async function Home({ searchParams }: PageProps) {
         <p className="text-sm text-gray-500">No transactions found for the current filters.</p>
       ) : (
         <>
-          <TransactionsTable transactions={transactions} showBankColumn={false} isEditMode={isEditMode} taxonomy={taxonomy} hiddenColumns={hiddenColumns} />
-          <PaginationNav bankId={bankId} filters={filters} currentPage={currentPage} totalPages={totalPages} />
+          <TransactionsTable transactions={transactions} showBankColumn={false} isEditMode={isEditMode} taxonomy={taxonomy} hiddenColumns={hiddenColumns} activeFilters={activeFilters} />
+          <PaginationNav bankId={bankId} filters={filters} currentPage={currentPage} totalPages={totalPages} pageSize={pageSize} />
         </>
       )}
     </main>
