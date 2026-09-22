@@ -8,7 +8,7 @@ Load this file only if the task contains: run / test / build / deploy / migrate 
 
 ```bash
 npm install
-cp .env.local.example .env.local
+cp .env.example .env.local
 # Fill in ENABLE_BANKING_APP_ID, ENABLE_BANKING_PRIVATE_KEY, NEXT_PUBLIC_APP_URL
 ```
 
